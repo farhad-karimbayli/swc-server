@@ -1,8 +1,10 @@
 # Local setup notes
 
-State on 2026-09-10: the server builds, starts, connects to MongoDB and serves
-the manifest. No game client has connected yet, because the asset bundles are
-missing.
+State on 2026-09-10: **a patched client logs in successfully.** The player id
+printed on the game's loading screen matches the document created in MongoDB,
+which is proof the client is talking to this server and not to anything else.
+The game then stops on the loading bar, waiting for asset bundles that do not
+exist here.
 
 ## What was changed in the upstream code
 
@@ -24,6 +26,17 @@ Two startup bugs, both fixed in place:
 - The server on port 8080, bound to all interfaces.
 - `./run.sh` starts both and rewrites the client-facing address in
   `swc.properties` to this machine's current address.
+
+## Pointing a client at this server
+
+`tools/patch_metadata.py` rewrites the addresses inside a client's
+`global-metadata.dat`. They live in two places and both must change: the string
+literals the running code reads, and the C# field default values. Patching only
+the defaults looks successful and changes nothing, which cost an entire
+build-and-test cycle to discover.
+
+The rebuilt package also needs `android:usesCleartextTraffic="true"` in its
+manifest, because the client targets API 28 and this server speaks plain HTTP.
 
 ## What is still missing
 
