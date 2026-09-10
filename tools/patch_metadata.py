@@ -38,6 +38,24 @@ DEFAULT_VALUE_DATA = 8
 API_HOST = "swc-app-prod.apps.starwarscommander.com"
 CDN_HOST = "zynga-swc-prod-1-seed.akamaized.net"
 
+# Third-party services that no longer matter but still stall the client. Their
+# certificates fail to validate, and each attempt blocks for the length of a
+# TLS handshake before giving up, over and over. Pointing them at a closed
+# local port turns a slow failure into an instant one. The address is also
+# short, which matters because a replacement can never be longer than the
+# string it overwrites.
+DEAD_END = "http://127.0.0.1:1"
+# Some of these hosts also appear as a bare name, with no scheme, because an
+# SDK builds its own URL from them. Those need a replacement that is a host
+# too, and short enough to fit.
+DEAD_HOST = "127.0.0.1"
+ABANDONED_HOSTS = (
+    "api.swrve.com",
+    "content.swrve.com",
+    "notify.bugsnag.com",
+    "sessions.bugsnag.com",
+)
+
 
 def rewrite(url: str, host: str) -> str:
     """Rebuild one original address against the private server.
@@ -51,6 +69,8 @@ def rewrite(url: str, host: str) -> str:
     if CDN_HOST in url:
         tail = url.split(CDN_HOST, 1)[1]
         return f"http://{host}/swcFiles{tail}"
+    if any(dead in url for dead in ABANDONED_HOSTS):
+        return DEAD_END
     raise ValueError(f"No rule for {url}")
 
 
@@ -89,11 +109,16 @@ def patch_literals(data: bytearray, host: str) -> int:
             continue
         start = data_off + index
         value = bytes(data[start : start + length])
-        if API_HOST.encode() not in value and CDN_HOST.encode() not in value:
+        if not any(h.encode() in value for h in (API_HOST, CDN_HOST, *ABANDONED_HOSTS)):
             continue
 
         text = value.rstrip(b"\x00").decode("ascii", "replace")
         new = rewrite(text, host).encode()
+        if len(new) > length and text.startswith(("http://", "https://")) is False:
+            new = DEAD_HOST.encode()
+        if len(new) > length:
+            print(f"  literal #{i}: {text}\n      -> skipped, needs {len(new)} bytes of {length}")
+            continue
         write_string(data, start, length, new)
         struct.pack_into("<I", data, entry, len(new))
         print(f"  literal #{i}: {text}\n      -> {new.decode()}")
@@ -119,10 +144,16 @@ def patch_defaults(data: bytearray, host: str) -> int:
         if declared not in (end - start, end - start + 1):
             continue
         text = match.group().decode()
-        if API_HOST not in text and CDN_HOST not in text:
+        if not any(h in text for h in (API_HOST, CDN_HOST, *ABANDONED_HOSTS)):
             continue
 
         new = rewrite(text, host).encode()
+        if len(new) > declared:
+            # Field defaults are belt and braces; the literals are what the
+            # running code reads. One that cannot be rewritten in place is
+            # worth a warning, not a failed patch.
+            print(f"  default: {text}\n      -> skipped, needs {len(new)} bytes of {declared}")
+            continue
         write_string(data, off + start, declared, new)
         struct.pack_into("<i", data, off + start - 4, len(new))
         print(f"  default: {text}\n      -> {new.decode()}")
