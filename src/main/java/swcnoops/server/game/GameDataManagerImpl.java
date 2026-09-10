@@ -846,6 +846,12 @@ public class GameDataManagerImpl implements GameDataManager {
         List<File> resultList = new ArrayList<>();
         // get all the files from a directory
         File[] fList = directory.listFiles();
+        // listFiles returns null for a path that is missing or unreadable.
+        // Patches are optional content, so an absent folder means "no patches",
+        // not a startup failure.
+        if (fList == null) {
+            return resultList;
+        }
         for (File file : fList) {
             if (file.isDirectory()) {
                 resultList.addAll(listFiles(file.getAbsolutePath()));

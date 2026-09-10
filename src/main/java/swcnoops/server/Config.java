@@ -89,13 +89,24 @@ public class Config {
     }
 
     private Object convertToObject(String property, Class<?> type) {
-        if (type == Integer.class) {
+        // Only Integer and String were handled, so any boolean or long in a
+        // properties file became null and the server died on startup with a
+        // reflection error. Primitive types need naming separately from their
+        // boxed forms, because field.getType() reports the primitive.
+        if (type == Integer.class || type == int.class) {
             return Integer.valueOf(property);
+        } else if (type == Long.class || type == long.class) {
+            return Long.valueOf(property);
+        } else if (type == Boolean.class || type == boolean.class) {
+            return Boolean.valueOf(property);
         } else if (type == String.class) {
             return property;
         }
 
-        return null;
+        // A silently ignored setting is worse than a loud failure: the server
+        // would run with a value the operator believes they changed.
+        throw new IllegalArgumentException(
+                "Config does not know how to read a " + type.getName() + " from a property");
     }
 
     public void setManifestVersionToUse(int manifestVersionToUse) {
