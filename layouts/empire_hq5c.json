@@ -1,0 +1,614 @@
+[
+ {
+  "key": "bld_1",
+  "x": -2,
+  "z": -3,
+  "uid": "empireHQ5"
+ },
+ {
+  "key": "bld_2",
+  "x": -5,
+  "z": -3,
+  "uid": "empireCreditStorage5"
+ },
+ {
+  "key": "bld_3",
+  "x": -5,
+  "z": 2,
+  "uid": "empireCreditStorage5"
+ },
+ {
+  "key": "bld_4",
+  "x": -2,
+  "z": 2,
+  "uid": "empireMaterialsStorage5"
+ },
+ {
+  "key": "bld_5",
+  "x": -6,
+  "z": -6,
+  "uid": "empireMaterialsStorage5"
+ },
+ {
+  "key": "bld_6",
+  "x": 1,
+  "z": 2,
+  "uid": "empireSquadBuilding5"
+ },
+ {
+  "key": "bld_7",
+  "x": -11,
+  "z": -9,
+  "uid": "empirePlatformDroideka1"
+ },
+ {
+  "key": "bld_8",
+  "x": -1,
+  "z": -6,
+  "uid": "empireCreditGenerator5"
+ },
+ {
+  "key": "bld_9",
+  "x": 3,
+  "z": -6,
+  "uid": "empireCreditGenerator5"
+ },
+ {
+  "key": "bld_10",
+  "x": 3,
+  "z": -1,
+  "uid": "empireCreditGenerator5"
+ },
+ {
+  "key": "bld_11",
+  "x": -10,
+  "z": -4,
+  "uid": "empireCreditGenerator5"
+ },
+ {
+  "key": "bld_12",
+  "x": -10,
+  "z": 0,
+  "uid": "empireCreditGenerator5"
+ },
+ {
+  "key": "bld_13",
+  "x": -10,
+  "z": 3,
+  "uid": "empireMaterialsGenerator5"
+ },
+ {
+  "key": "bld_14",
+  "x": -10,
+  "z": 6,
+  "uid": "empireMaterialsGenerator5"
+ },
+ {
+  "key": "bld_15",
+  "x": -5,
+  "z": -10,
+  "uid": "empireMaterialsGenerator5"
+ },
+ {
+  "key": "bld_16",
+  "x": -1,
+  "z": -10,
+  "uid": "empireMaterialsGenerator5"
+ },
+ {
+  "key": "bld_17",
+  "x": 3,
+  "z": -10,
+  "uid": "empireMaterialsGenerator5"
+ },
+ {
+  "key": "bld_18",
+  "x": -7,
+  "z": 8,
+  "uid": "empireStarport5"
+ },
+ {
+  "key": "bld_19",
+  "x": 7,
+  "z": -13,
+  "uid": "empireStarport5"
+ },
+ {
+  "key": "bld_20",
+  "x": 1,
+  "z": 8,
+  "uid": "empireFactory5"
+ },
+ {
+  "key": "bld_21",
+  "x": 8,
+  "z": -7,
+  "uid": "empireFactory5"
+ },
+ {
+  "key": "bld_22",
+  "x": 7,
+  "z": 8,
+  "uid": "empireFleetCommand5"
+ },
+ {
+  "key": "bld_23",
+  "x": 8,
+  "z": -2,
+  "uid": "empireTacticalCommand5"
+ },
+ {
+  "key": "bld_24",
+  "x": 8,
+  "z": 4,
+  "uid": "empireBarracks5"
+ },
+ {
+  "key": "bld_25",
+  "x": -11,
+  "z": -12,
+  "uid": "empireBarracks5"
+ },
+ {
+  "key": "bld_26",
+  "x": -11,
+  "z": 9,
+  "uid": "empireBarracks5"
+ },
+ {
+  "key": "bld_27",
+  "x": -13,
+  "z": -5,
+  "uid": "empireNavigationCenter1"
+ },
+ {
+  "key": "bld_28",
+  "x": -8,
+  "z": -12,
+  "uid": "empireOffenseLab5"
+ },
+ {
+  "key": "bld_29",
+  "x": -13,
+  "z": 0,
+  "uid": "empireScoutTower1"
+ },
+ {
+  "key": "bld_30",
+  "x": -1,
+  "z": 8,
+  "uid": "empireShieldGenerator5"
+ },
+ {
+  "key": "bld_31",
+  "x": -12,
+  "z": 5,
+  "uid": "empireShieldGenerator5"
+ },
+ {
+  "key": "bld_32",
+  "x": -3,
+  "z": -5,
+  "uid": "empireDroidHut1"
+ },
+ {
+  "key": "bld_33",
+  "x": -5,
+  "z": 0,
+  "uid": "empireTrapStrikeGeneric5"
+ },
+ {
+  "key": "bld_34",
+  "x": -4,
+  "z": 1,
+  "uid": "empireTrapStrikeGeneric5"
+ },
+ {
+  "key": "bld_35",
+  "x": 2,
+  "z": -5,
+  "uid": "empireTrapStrikeAOE5"
+ },
+ {
+  "key": "bld_36",
+  "x": 2,
+  "z": -4,
+  "uid": "empireTrapStrikeAOE5"
+ },
+ {
+  "key": "bld_37",
+  "x": 12,
+  "z": 3,
+  "uid": "empireBurstTurret5"
+ },
+ {
+  "key": "bld_38",
+  "x": 4,
+  "z": 13,
+  "uid": "empireRapidFireTurret5"
+ },
+ {
+  "key": "bld_39",
+  "x": 0,
+  "z": 13,
+  "uid": "empireRocketTurret5"
+ },
+ {
+  "key": "bld_40",
+  "x": -15,
+  "z": 6,
+  "uid": "empireMortar5"
+ },
+ {
+  "key": "bld_41",
+  "x": -16,
+  "z": 1,
+  "uid": "empireBurstTurret5"
+ },
+ {
+  "key": "bld_42",
+  "x": -14,
+  "z": -8,
+  "uid": "empireRapidFireTurret5"
+ },
+ {
+  "key": "bld_43",
+  "x": -4,
+  "z": -13,
+  "uid": "empireRocketTurret5"
+ },
+ {
+  "key": "bld_44",
+  "x": 0,
+  "z": -13,
+  "uid": "empireMortar5"
+ },
+ {
+  "key": "bld_45",
+  "x": 4,
+  "z": -13,
+  "uid": "empireBurstTurret5"
+ },
+ {
+  "key": "bld_46",
+  "x": 13,
+  "z": -2,
+  "uid": "empireRapidFireTurret5"
+ },
+ {
+  "key": "bld_47",
+  "x": -7,
+  "z": -7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_48",
+  "x": -6,
+  "z": -7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_49",
+  "x": -5,
+  "z": -7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_50",
+  "x": -4,
+  "z": -7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_51",
+  "x": -3,
+  "z": -7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_52",
+  "x": -2,
+  "z": -7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_53",
+  "x": -1,
+  "z": -7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_54",
+  "x": 0,
+  "z": -7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_55",
+  "x": 1,
+  "z": -7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_56",
+  "x": 2,
+  "z": -7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_57",
+  "x": 3,
+  "z": -7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_58",
+  "x": 4,
+  "z": -7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_59",
+  "x": 5,
+  "z": -7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_60",
+  "x": 6,
+  "z": -7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_61",
+  "x": 7,
+  "z": -7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_62",
+  "x": 7,
+  "z": -6,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_63",
+  "x": 7,
+  "z": -5,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_64",
+  "x": 7,
+  "z": -4,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_65",
+  "x": 7,
+  "z": -3,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_66",
+  "x": 7,
+  "z": -2,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_67",
+  "x": 7,
+  "z": -1,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_68",
+  "x": 7,
+  "z": 0,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_69",
+  "x": 7,
+  "z": 1,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_70",
+  "x": 7,
+  "z": 2,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_71",
+  "x": 7,
+  "z": 3,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_72",
+  "x": 7,
+  "z": 4,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_73",
+  "x": 7,
+  "z": 5,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_74",
+  "x": 7,
+  "z": 6,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_75",
+  "x": 7,
+  "z": 7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_76",
+  "x": 6,
+  "z": 7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_77",
+  "x": 5,
+  "z": 7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_78",
+  "x": 4,
+  "z": 7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_79",
+  "x": 3,
+  "z": 7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_80",
+  "x": 2,
+  "z": 7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_81",
+  "x": 1,
+  "z": 7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_82",
+  "x": 0,
+  "z": 7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_83",
+  "x": -1,
+  "z": 7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_84",
+  "x": -2,
+  "z": 7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_85",
+  "x": -3,
+  "z": 7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_86",
+  "x": -4,
+  "z": 7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_87",
+  "x": -5,
+  "z": 7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_88",
+  "x": -6,
+  "z": 7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_89",
+  "x": -7,
+  "z": 7,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_90",
+  "x": -7,
+  "z": 6,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_91",
+  "x": -7,
+  "z": 5,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_92",
+  "x": -7,
+  "z": 4,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_93",
+  "x": -7,
+  "z": 3,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_94",
+  "x": -7,
+  "z": 2,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_95",
+  "x": -7,
+  "z": 1,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_96",
+  "x": -7,
+  "z": 0,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_97",
+  "x": -7,
+  "z": -1,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_98",
+  "x": -7,
+  "z": -2,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_99",
+  "x": -7,
+  "z": -3,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_100",
+  "x": -7,
+  "z": -4,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_101",
+  "x": -7,
+  "z": -5,
+  "uid": "empireWall5"
+ },
+ {
+  "key": "bld_102",
+  "x": -7,
+  "z": -6,
+  "uid": "empireWall5"
+ }
+]

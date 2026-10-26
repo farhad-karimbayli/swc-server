@@ -31,7 +31,7 @@ public class GeneratePlayer extends AbstractCommandAction<GeneratePlayer, Genera
 
     private PlayerLoginCommandResult loadPlayerTemplate() throws Exception {
         PlayerLoginCommandResult response = ServiceFactory.instance().getJsonParser()
-                .toObjectFromResource(ServiceFactory.instance().getConfig().playerLoginTemplate, PlayerLoginCommandResult.class);
+                .toObjectFromResource(ServiceFactory.instance().getConfig().newPlayerTemplate, PlayerLoginCommandResult.class);
         return response;
     }
 

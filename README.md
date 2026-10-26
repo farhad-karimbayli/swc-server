@@ -1,115 +1,124 @@
-# SwcNoops
-Star Wars Commander private server MongoDB version. The old version which will be discontinued has been copied over to repo swcnoops0.
-MongoDB instructions to come.
+# Star Wars: Commander - Private Server (SwcNoops)
 
-Mongo Setup :
+A reverse-engineered private server for the mobile strategy game **Star Wars: Commander** (closed by Disney/Zynga in 2020). 
 
-1) Used these instructions to install mongoDB
-   https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/
-2) Used these instructions to convert the stand alone mongodb to a replica set as that is a for transaction support.
-   https://www.mongodb.com/docs/manual/tutorial/convert-standalone-to-replica-set/
-3) Modify the mongoDB config to enable remote login and replicaSet
-4) Create a new admin user and enable authentication
-   https://www.mongodb.com/features/mongodb-authentication
-5) For authentication to work with replicaSet, have to create a keyfile and configure it, very important the owner of the keyfile must be the same as the user that runs mongod
-   https://www.mongodb.com/docs/manual/tutorial/enforce-keyfile-access-control-in-existing-replica-set/
-   https://stackoverflow.com/questions/28251531/permission-denied-to-read-file-owned-by-user
+This repository allows running the game locally or on a shared server, playing on real Android devices (or emulators) with fully working PvE campaign missions, PvP attacks against generated bases, base building, troop training, and custom modding.
 
-MongoDB cheat sheet
+---
 
-1) logfile location
-/var/log/mongodb/mongod.log
-2) starting 
-sudo systemctl start mongod
+## Current Status & Features
 
+* **Platforms:** Runs on real Android devices (tested on modern devices like Samsung Galaxy S23 Ultra) and Android emulators.
+* **Working Gameplay:** Login, 3D base rendering, base construction & upgrades, PvE campaign missions (217 generated missions), PvP attacks against HQ 5–11 layouts.
+* **AutoRefill (`refill.json`):** Automatic replenishing of troops, starships, heroes, and Droideka champions after every battle and on login.
+* **Base Fortification:** Built-in tools for defensive ring layouts (`tools/fortify_base.py`, `tools/base_layout.sh`).
+* **Content Unlocks:** Halloween Heavy Undead Trooper (`EmpireHeavyStormDeath`) unlocked in barracks via reverse-engineered JOE patch data.
+* **Asset Server:** Self-hosted CDN serving manifest `02045`, 1200+ asset bundles, UI strings, and audio.
 
-A reverse engineer of the server to run the game Star Wars Commander privately.
-This first version has just enough APIs to provide a set of bases that can be attacked.
+---
 
-This is a standalone webserver to bring this great game back to players who miss it as much as I do.
+## Quickstart Guide
 
-To use the server :
+### 1. Prerequisites
 
-1) Change config class to point to the root directory of the asset bundles and layouts.
-2) Copy "swcFiles" folder, which contains the last manifest file, along with your copy of the assetbundles to a location configured in your config class.
-3) Copy a set of base layouts (same format as layout manager) to the location configured in your config class.
-4) Start the server by executing Main class, currently I run in debug to catch any missing APIs not implemented.
-5) Run a patched version of the game client to point to the server OR run the game through a proxy and redirect the calls.
+Make sure the following tools are installed:
+* **Docker & Docker Desktop** (runs MongoDB 7 with replica set `rs0` for transaction support).
+* **Java Development Kit (JDK 17 or 21)** (e.g. Eclipse Temurin).
+* **Apache Maven** (`mvn`).
+* **Python 3** (for tools and client metadata patcher).
+* **Android SDK Build Tools** (`zipalign` and `apksigner`, only needed if patching client APKs).
 
-## Redirect game client
-The game client can be easily tricked into having its calls redirected. In the early days, the community worked out how to access the server, which brought out layout manager and some other utilities. The old original disassembled source of the client was also available, which is mostly what allowed me to do this reverse engineering. All of these are still available on github and a good starting point in understanding the APIs.
+### 2. Running the Server
 
-Like them I used Fiddler to listen to the API calls between the client and server. This was easily achieved if you ran the game on an Android emulator using Android 5, or even easier if you ran the game through Facebook gameroom. Please dont ask me how to do this as you will find better instructions if you google fiddler and intercepting https calls. There is no need for me to repeat those instructions as all I did was follow what I found by googling.
+1. **Start Docker Desktop**.
+2. **Start the server**:
+   ```bash
+   ./run.sh
+   ```
+   * What `./run.sh` does automatically:
+     - Starts a Docker container named `swc-mongo` with MongoDB 7 configured as a single-node replica set `rs0`.
+     - Detects your machine's local Wi-Fi / Ethernet IP address.
+     - Updates `cdnRoots` and `event2BiLoggingIpAddress` in `swc.properties`.
+     - Compiles the Java project and starts the HTTP server on port `8080`.
+3. **Verify the server is running**:
+   ```bash
+   curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8080/swcFiles/manifests/__manifest_zyngaswc_prod.02045.json
+   ```
+   A response of `200` means the server is serving static assets and API requests.
 
-Anyway to redirect the game client, I used Fiddler's autoresponder to intercept and redirect the following API calls from the client.
-I would also recommend setting AutoResponder to not passthrough any unmatched rules, as this will prevent other calls it makes to facebook, logging and tracing.
+### 3. Setting Up the Android Client
 
->redirect - regex:https://zynga-swc-prod-1-seed.akamaized.net/(.*)
->to - http://<serverhost:port>/swcFiles/$1
->
->redirect - regex:https://swc-app-prod.apps.starwarscommander.com/(.*)
->to - http://<serverhost:port>/$1
+The game client needs to point to your server IP. The IP is baked into IL2CPP metadata.
 
-where "serverhost" and "port" is the ip and port of your game server.
-Notice that the redirect for zynga-swc-prod-1-seed.akamaized.net, changes the URL to pre-append "swcFiles", that is used by the server to recognise it is a GET for the manifest and assetbundles. This is case sensitive and must match with what you have set in the Config class.
-The client if running on Android or an Android emulator, you need to configure the wifi connection to use the proxy (google this if you do not know how).
+1. Obtain a clean Star Wars Commander 7.8.1 APK (e.g. `star-wars-commander-7-8-1-253.apk`).
+2. Run the automated patch script:
+   ```bash
+   ./tools/build_client.sh <YOUR_SERVER_IP>:8080 /path/to/star-wars-commander-7-8-1-253.apk
+   ```
+   *Example:* `./tools/build_client.sh 192.168.1.100:8080`
+3. Install the generated APK on your device:
+   ```bash
+   adb install -r client/swc-patched-192.168.1.100_8080.apk
+   ```
+   *(All development APKs are signed with `client/swc-dev.keystore`, password: `swcserver`, alias: `swc`)*.
 
-## Patching game client
-Coming... (once I have worked out how to do it)
+---
 
-1. Notes of my attempts for patching in README_CLIENT_PATCHING.md
+## Configuration
 
+* **[swc.properties](file:///Users/karimbaylifarhad/claude_console/swc-server/swc.properties)**: Main server configuration. See `swc.properties.example` for detailed documentation of each field.
+* **[refill.json](file:///Users/karimbaylifarhad/claude_console/swc-server/refill.json.example)**: Auto-refill army configuration. Copy `refill.json.example` to `refill.json` and insert your player UUID to keep your army replenished automatically.
+* **Override IP:** If you want to force a specific IP or hostname without relying on auto-detection:
+  ```bash
+  SWC_HOST=192.168.1.50 ./run.sh
+  ```
 
-## Obtaining game asset bundle and modding
-Currently I am undecided if I should provide out the assetbundles, the thinking behind that is I dont want the responsibility of potentially giving out a harmful binary (as some of those files I obtained from some link I found recently, which you can easily find if you search hard enough - hint some modelling site has provided some).
+---
 
-For code, layouts and the latest manifest file, I have no problems giving those out.
-Now in theory, if you still have the game installed and played it before the shutdown, there is a chance you will have some of the assets in the unity cache. At present I dont know how to reverse those, but it should be feasible to turn those cached files back to a bundle. So if you still have the game installed, quickly take a copy of those files and keep them safe.
+## Project Structure
 
-If you are a modder and you are interested in providing mods to the game. If you are interested then I can give you those bundles to mod, with the intention that it could be used freely to maybe one day bring this game back to the community. Unfortnately I do not have the skills to mod unity bundles, not one of my skill sets, although to be honest none of this is my area of expertise, I just miss the game, the squads and the community, and this is my way to give something back so this game is not lost forever.
+```text
+├── run.sh                  # Main startup script (Docker MongoDB + Java server)
+├── pom.xml                 # Maven build definition (SparkJava, Jackson, MongoJack)
+├── swc.properties          # Server properties (paths, CDN URLs, database)
+├── swc.properties.example  # Reference configuration template
+├── refill.json.example     # Template for auto-refill of player army
+├── src/                    # Java source code
+│   └── main/java/swcnoops/server/
+│       ├── SparkMain.java  # HTTP server entry point & request logger
+│       ├── Config.java     # Configuration manager
+│       ├── session/        # Player, Guild, War sessions & AutoRefill
+│       ├── commands/       # Game API command handlers
+│       └── game/           # Game data, raids, and objective managers
+├── swcFiles/               # Game asset bundles, manifest, strings, and battle maps
+├── layouts/                # Validated PvP layouts for Empire and Rebel bases (HQ 5-11)
+├── client/                 # Client signing keystores and client documentation
+└── tools/                  # Developer utilities
+    ├── build_client.sh     # One-step APK patcher and signer
+    ├── patch_metadata.py   # IL2CPP global-metadata.dat address rewriter
+    ├── gen_layouts.py      # Base layout generator and validator
+    ├── fortify_base.py     # Procedural defensive base rebuilder
+    ├── base_layout.sh      # Tool to apply base layouts directly into MongoDB
+    └── joe/                # Zynga JOE binary asset serializer/deserializer
+```
 
-## What works, what does not, TODO and where is this going
-The first version of the server supports a single player with a maxed out base and PVP working.
-You can attack the bases provided in your layouts folder. 
-Currently donating to your SC does not work, and enemy SC is empty.
-Enemy does not have any Droidekas.
-Anything outside of that you will crash your client as it does not like any failed APIs that does not provide what it needs.
-The good news, if you are using fiddler the errors get sent out to a URL with "bi_event2" at the end, and that sometimes gives you details on critical errors.
-That is how I recognise if there are problems and which API is not working.
+---
 
-What works so far
-* Saving player state for troops, map and builds
-* Player can join a self donating squad to donate to oneself
-* Campaign missions
-* Deka platform and upgrading
-* Enemy base always has droidekas and creature
-* Transition to prestige
-* Enemy SC to always be full
-* Squad and multiplayer
-* PvP
-* Dual accounts for faction flipping
+## Team Collaboration & Git Workflow
 
-Things to work on in no particular order (eventually)
-* Planet objectives
-* Daily base defense
-* Handling resources that are collected and raided in attacks
+1. **Private Repository:** Because the project deals with Star Wars: Commander assets and client binaries, keep the remote repository **Private**.
+2. **Branching Model:**
+   * `main` is protected and should always remain stable.
+   * Develop features and bugfixes in dedicated branches (`feature/<name>`, `fix/<name>`).
+   * Submit changes via Pull Requests (PR) with review.
+3. **Ignored Files:** APKs (`client/*.apk`), personal backups (`base_backups/`), and local run logs (`run.log`) are strictly ignored by `.gitignore`.
+4. **Shared Dev Server (Recommended for Teams):**
+   * For multiple developers to test multiplayer features (PvP against each other, squads, donations), deploy an instance of this server to an Ubuntu VPS with a static IP or domain name.
+   * This eliminates the need to rebuild APKs when local Wi-Fi IPs change.
 
-Things that may never work.
-* Squad chat
-* Episodes and special events
+---
 
-Who knows where this will lead to, not really thought that far.
-I program all day as a day job and to be honest I dont enjoy it when I stop work. However I find reverse engineering different and currently learning new things is a lot of fun. Maybe one day I will do a remake of a version of this game, but I cant see attempting that any time soon and certainly not to do that on my own.
+## Detailed Notes & Changelog
 
-## Simple build instructions with IntelliJ with a zip of the code
-
-1. Download ZIP code for main branch in Github.
-2. Unzip the file swcnoops-main.zip to the root of C drive
-3. Rename the folder that is in C drive from swcnoops-main to swcnoops so you have a folder C:\swcnoops
-4. Start IntelliJ 2022.1 (latest community version) and click on Open button
-5. Select folder "c:\swcnoops" and click on Ok button
-6. A dialog pops up to say Maven build scripts found, click on Load Maven Project.
-7. IntelliJ will sync and download all the maven dependencies, wait for this to finish, takes about a minute
-8. Click on Build->Rebuild Project to build
-9. Find main class by ctrl+n and type in "Main", select it and it will jump to the source
-10. Right mouse anywhere in the main classes code, select Debug Main.main() to start the server
+* **[README_CHANGES.md](file:///Users/karimbaylifarhad/claude_console/swc-server/README_CHANGES.md)**: Detailed breakdown of every bugfix and modification made in this fork.
+* **[NOTES.md](file:///Users/karimbaylifarhad/claude_console/swc-server/NOTES.md)**: Dated engineering worklog, reverse-engineering notes, and test records.

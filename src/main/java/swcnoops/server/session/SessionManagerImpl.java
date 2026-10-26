@@ -70,10 +70,14 @@ public class SessionManagerImpl implements SessionManager {
             playerSettings.setFaction(defaultPlayerModel.faction);
         if (playerSettings.getCurrentQuest() == null)
             playerSettings.setCurrentQuest(defaultPlayerModel.currentQuest);
-        if (playerSettings.getPlayerCampaignMission() == null) {
-            PlayerCampaignMission playerCampaignMission =
-                    new PlayerCampaignMission(defaultPlayerModel.campaigns, defaultPlayerModel.missions);
-            playerSettings.setPlayerCampaignMission(playerCampaignMission);
+        // A player saved before this ran has an empty object here, not a null
+        // one, and an empty object is just as uninitialised: its two maps are
+        // null, and the client receives "campaigns": null, "missions": null
+        // where the real server always sent the campaign and mission tables.
+        PlayerCampaignMission campaignMission = playerSettings.getPlayerCampaignMission();
+        if (campaignMission == null || campaignMission.campaigns == null || campaignMission.missions == null) {
+            playerSettings.setPlayerCampaignMission(
+                    new PlayerCampaignMission(defaultPlayerModel.campaigns, defaultPlayerModel.missions));
         }
 
         if (playerSettings.getSharedPreferences() == null)

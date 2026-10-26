@@ -1,3 +1,33 @@
+# Maven build target and dependencies
 /target/
+cp.txt
+
+# Logs
+*.log
+run.log
+
+# Batch exchange dumps
+swc-batches/
+
+# IDE and Editor configs
 /.idea/
-/swcnoops.iml
+*.iml
+.vscode/
+*.ipr
+*.iws
+
+# OS-specific files
+.DS_Store
+*/.DS_Store
+Thumbs.db
+
+# Client APK binaries & signatures (too large for git, built per-environment)
+client/*.apk
+client/*.idsig
+
+# User-specific backups and game states
+base_backups/
+player_backup/
+
+# User-specific auto-refill configuration (use refill.json.example as template)
+refill.json

@@ -11,7 +11,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ObjectiveManagerImpl implements ObjectiveManager {
     final private Random random = new Random();
-    private Map<String, ObjSeriesData> planetSeries;
+    // Objective data lives in a core patch we do not have, so setup() is never
+    // called and this stayed null, which killed every player.login after the
+    // first one. An empty map means "no objectives for any planet", which is
+    // what getObjectiveGroup already does for a planet it has no series for.
+    private Map<String, ObjSeriesData> planetSeries = new HashMap<>();
     private Map<String, FactionObjectives> objectiveBuckets = new HashMap<>();
 
     public static List<ObjectiveProgress> getActiveObjectives(Map<String, ObjectiveGroup> playerObjectives, String planet, GoalType... goalTypes) {

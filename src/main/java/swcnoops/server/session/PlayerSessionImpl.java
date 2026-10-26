@@ -741,6 +741,9 @@ public class PlayerSessionImpl implements PlayerSession {
         killedChampions.forEach((k,v) -> {
             this.getTrainingManager().getDeployableChampion().removeDeployable(k, v);
         });
+
+        // Every caller saves the session right after this, so the refill is stored with the battle.
+        AutoRefill.apply(this, "battle");
     }
 
     @Override

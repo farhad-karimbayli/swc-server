@@ -16,6 +16,14 @@ public class Config {
      */
     public String templateDir = "newPlayer";
     public String playerLoginTemplate = templateDir + "/" + "playerLogin.json";
+    /**
+     * The template a brand-new player is created from, kept apart from
+     * playerLoginTemplate so new players can start at HQ1 in the tutorial while
+     * players who finished it keep the login template they already had.
+     */
+    public String newPlayerTemplate = "newPlayer/playerLogin.json";
+    /** Players and amounts for session/AutoRefill, relative to swcRootPath; empty turns it off. */
+    public String autoRefillFile = "";
     public String swcFolderName = "swcFiles";
     public String swcRootPath = "c:/swcnoops/";
     public String layoutsPath = swcRootPath + "layouts";

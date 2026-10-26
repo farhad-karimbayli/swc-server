@@ -7,8 +7,21 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-JAVA_HOME="${JAVA_HOME:-/Users/karimbaylifarhad/Library/Java/JavaVirtualMachines/temurin-21.0.11/Contents/Home}"
 
+# Detect Java 17+ binary
+JAVA_BIN=""
+if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then
+  JAVA_BIN="$JAVA_HOME/bin/java"
+elif command -v java >/dev/null 2>&1; then
+  JAVA_BIN="$(command -v java)"
+elif [ -d "/Users/karimbaylifarhad/Library/Java/JavaVirtualMachines/temurin-21.0.11/Contents/Home/bin" ]; then
+  JAVA_BIN="/Users/karimbaylifarhad/Library/Java/JavaVirtualMachines/temurin-21.0.11/Contents/Home/bin/java"
+else
+  echo "Error: Java was not found. Please install Java 17+ or set JAVA_HOME." >&2
+  exit 1
+fi
+
+# Ensure MongoDB is running in Docker
 if ! docker ps --format '{{.Names}}' | grep -qx swc-mongo; then
   echo "Starting MongoDB..."
   docker start swc-mongo >/dev/null 2>&1 || \
@@ -20,16 +33,33 @@ if ! docker ps --format '{{.Names}}' | grep -qx swc-mongo; then
     'try { rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]}) } catch(e) {}' >/dev/null
 fi
 
-# The address the game client will be told to fetch assets from has to be one
-# the phone or emulator can reach, so it follows this machine's current address.
-IP="$(ipconfig getifaddr en0 2>/dev/null || hostname -I | awk '{print $1}')"
+# Detect network IP for client access (can be explicitly set via SWC_HOST=<ip>)
+IP="${SWC_HOST:-}"
+if [ -z "$IP" ]; then
+  if command -v ipconfig >/dev/null 2>&1; then
+    IP="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true)"
+  fi
+  if [ -z "$IP" ] && command -v hostname >/dev/null 2>&1; then
+    IP="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
+  fi
+  if [ -z "$IP" ] && command -v ip >/dev/null 2>&1; then
+    IP="$(ip -4 addr show scope global 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1 | head -n1 || true)"
+  fi
+  IP="${IP:-127.0.0.1}"
+fi
+
 echo "Server address for the client: http://${IP}:8080"
-sed -i '' -E "s|^(cdnRoots=http://)[^:]+|\1${IP}|" "$ROOT/swc.properties" 2>/dev/null || true
-sed -i '' -E "s|^(event2BiLoggingIpAddress=http://)[^:]+|\1${IP}|" "$ROOT/swc.properties" 2>/dev/null || true
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  sed -i '' -E "s|^(cdnRoots=http://)[^:/]+|\1${IP}|" "$ROOT/swc.properties" 2>/dev/null || true
+  sed -i '' -E "s|^(event2BiLoggingIpAddress=http://)[^:/]+|\1${IP}|" "$ROOT/swc.properties" 2>/dev/null || true
+else
+  sed -i -E "s|^(cdnRoots=http://)[^:/]+|\1${IP}|" "$ROOT/swc.properties" 2>/dev/null || true
+  sed -i -E "s|^(event2BiLoggingIpAddress=http://)[^:/]+|\1${IP}|" "$ROOT/swc.properties" 2>/dev/null || true
+fi
 
 cd "$ROOT"
 [ -f cp.txt ] || mvn -q dependency:build-classpath -Dmdep.outputFile=cp.txt
 [ -d target/classes ] || mvn -q -DskipTests package
 
-exec "$JAVA_HOME/bin/java" -cp "target/classes:$(cat cp.txt)" \
+exec "$JAVA_BIN" -cp "target/classes:$(cat cp.txt)" \
   swcnoops.server.SparkMain swc.properties

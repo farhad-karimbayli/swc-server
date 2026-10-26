@@ -610,6 +610,11 @@ public class PlayerDatasourceImpl implements PlayerDataSource {
         Player player = new Player(playerId);
         player.setPlayerSecret(new PlayerSecret(secret, null, missingSecret));
         player.setPlayerSettings(new PlayerSettings());
+        // A fresh PlayerSettings starts with an empty inventory, not a null one,
+        // so setFromModel would never copy the template's starting resources and
+        // a new player began with nothing. Clearing first lets the template fill
+        // every field, the same way an account reset already does.
+        ServiceFactory.instance().getSessionManager().resetPlayerSettings(player.getPlayerSettings());
         ServiceFactory.instance().getSessionManager().setFromModel(player.getPlayerSettings(), playerModel);
         if (sharedPrefs != null)
             player.getPlayerSettings().getSharedPreferences().putAll(sharedPrefs);

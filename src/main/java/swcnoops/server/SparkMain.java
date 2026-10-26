@@ -103,12 +103,37 @@ public class SparkMain {
             // Log which commands the client asked for. When it stalls, the
             // last command in this list is where it stopped, and that is the
             // only clue the client gives.
-            LOG.info("batch in : {}", batchRequestJson.length() > 700 ? batchRequestJson.substring(0, 700) : batchRequestJson);
+            // Bodies are far too long for a log line but are the only record
+            // of what the client asked for and what it was told, so each pair
+            // is written to its own file for later reading.
+            int n = exchangeCounter.incrementAndGet();
+            dump(n, "request", batchRequestJson);
             String json = ServiceFactory.instance().getBatchProcessor().processBatchPostBody(batchRequestJson);
-            LOG.info("batch out: {}", json != null && json.length() > 400 ? json.substring(0, 400) : json);
+            dump(n, "response", json);
+            LOG.info("batch #{} written to {}", n, DUMP_DIR);
             response.type("application/json");
             response.body(json);
             return json;
+        }
+    }
+
+    private static final java.util.concurrent.atomic.AtomicInteger exchangeCounter =
+            new java.util.concurrent.atomic.AtomicInteger();
+    private static final java.nio.file.Path DUMP_DIR =
+            java.nio.file.Paths.get(System.getProperty("java.io.tmpdir"), "swc-batches");
+
+    /** Writes one side of a batch exchange to a file, ignoring any failure. */
+    private static void dump(int number, String kind, String body) {
+        if (body == null) {
+            return;
+        }
+        try {
+            java.nio.file.Files.createDirectories(DUMP_DIR);
+            java.nio.file.Files.write(
+                    DUMP_DIR.resolve(String.format("%03d-%s.json", number, kind)),
+                    body.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            LOG.warn("could not write batch dump: {}", e.toString());
         }
     }
 
@@ -132,6 +157,14 @@ public class SparkMain {
         @Override
         public Object handle(Request request, Response response) throws Exception {
             String path = ServiceFactory.instance().getConfig().swcRootPath + request.pathInfo();
+            // Campaign attack missions fetch an enemy base layout from
+            // swcFiles/<v>/battles/<name>.json. The original designed layouts
+            // are almost all lost, so a missing one falls back to a valid base
+            // instead of a 404, which lets the mission load and be played.
+            if (path.contains("/battles/") && !new java.io.File(path).exists()) {
+                path = ServiceFactory.instance().getConfig().swcRootPath
+                        + "/swcFiles/battles/_default_mission.json";
+            }
             //long fileSize = Files.size(Paths.get(path));
             response.type("octet-stream");
             //response.raw().setContentLength((int) fileSize);

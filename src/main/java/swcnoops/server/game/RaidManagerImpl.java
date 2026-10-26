@@ -35,6 +35,13 @@ public class RaidManagerImpl implements RaidManager {
     public Raid calculateRaidTimes(String planetId, float offset, FactionType faction, int hqLevel,
                                    Map<String, Long> raidLogs, long timeInSecondsUTC)
     {
+        // Raid data is not loaded in this server (no RaidData table in the core
+        // patches), so a planet can have no raids. Return null rather than NPE.
+        List<RaidData> raidsForPlanet = this.planetRaids.get(planetId);
+        if (raidsForPlanet == null || raidsForPlanet.isEmpty()) {
+            return null;
+        }
+
         Long lastPlanetRaidTime = null;
         if (raidLogs != null) {
             lastPlanetRaidTime = raidLogs.get(planetId);
@@ -150,12 +157,16 @@ public class RaidManagerImpl implements RaidManager {
         List<Raid> playerRaids = new ArrayList<>();
 
         Raid planet1Raid = calculateRaidTimes("planet1", timeZoneOffset, faction, hqLevel, raidLogs, time);
-        playerRaids.add(planet1Raid);
+        if (planet1Raid != null)
+            playerRaids.add(planet1Raid);
 
         if (unlockedPlanets != null) {
             for (String planetId : unlockedPlanets) {
+                if (planetId.equals("planet1"))
+                    continue;
                 Raid raid = calculateRaidTimes(planetId, timeZoneOffset, faction, hqLevel, raidLogs, time);
-                playerRaids.add(raid);
+                if (raid != null)
+                    playerRaids.add(raid);
             }
         }
 

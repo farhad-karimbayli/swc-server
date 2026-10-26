@@ -1,0 +1,36 @@
+# Server HTTP port
+webServicePort=8080
+
+# Player templates: 'existingPlayer' loads pre-configured HQ11 base for existing players,
+# 'newPlayer' starts with Smuggler HQ1 base and tutorial.
+templateDir=existingPlayer
+playerLoginTemplate=existingPlayer/playerLogin.json
+playerContentGetTemplate=existingPlayer/playerContentGet.json
+guildWarGetParticipantTemplate=existingPlayer/guildWarGetParticipant.json
+newPlayerTemplate=newPlayer/playerLogin.json
+
+# Auto-refill army after battles and on login (see refill.json.example)
+autoRefillFile=refill.json
+
+# Asset bundles and static web files folder
+swcFolderName=swcFiles
+swcRootPath=.
+layoutsPath=./layouts
+
+# Client-facing server IP (updated automatically by run.sh to local network IP)
+event2BiLoggingIpAddress=http://127.0.0.1:8080
+cdnRoots=http://127.0.0.1:8080/swcFiles/
+
+# Game data json patches
+troopJson=patches/manifest45/trp.json
+baseJson=patches/manifest45/base.json
+caeJson=patches/manifest45/cae.json
+coreJsonPatches=base.json;cae.json;trp.json
+
+# Dev bases for PvP matching and free resources
+loadDevBases=true
+freeResources=true
+
+# MongoDB connection (requires replicaSet for transaction support)
+mongoDBConnection=mongodb://localhost:27017/?replicaSet=rs0
+mongoDBName=swc

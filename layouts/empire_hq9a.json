@@ -1,0 +1,1058 @@
+[
+ {
+  "key": "bld_1",
+  "x": -2,
+  "z": -3,
+  "uid": "empireHQ9"
+ },
+ {
+  "key": "bld_2",
+  "x": -5,
+  "z": -3,
+  "uid": "empireContrabandStorage8"
+ },
+ {
+  "key": "bld_3",
+  "x": -5,
+  "z": 2,
+  "uid": "empireMaterialsStorage9"
+ },
+ {
+  "key": "bld_4",
+  "x": -1,
+  "z": 2,
+  "uid": "empireMaterialsStorage9"
+ },
+ {
+  "key": "bld_5",
+  "x": 2,
+  "z": 2,
+  "uid": "empireMaterialsStorage9"
+ },
+ {
+  "key": "bld_6",
+  "x": -5,
+  "z": -6,
+  "uid": "empireMaterialsStorage9"
+ },
+ {
+  "key": "bld_7",
+  "x": -1,
+  "z": -6,
+  "uid": "empireCreditStorage9"
+ },
+ {
+  "key": "bld_8",
+  "x": 3,
+  "z": -6,
+  "uid": "empireCreditStorage9"
+ },
+ {
+  "key": "bld_9",
+  "x": 3,
+  "z": -2,
+  "uid": "empireCreditStorage9"
+ },
+ {
+  "key": "bld_10",
+  "x": -8,
+  "z": -6,
+  "uid": "empireCreditStorage9"
+ },
+ {
+  "key": "bld_11",
+  "x": -9,
+  "z": -1,
+  "uid": "empireSquadBuilding9"
+ },
+ {
+  "key": "bld_12",
+  "x": -9,
+  "z": 4,
+  "uid": "empirePlatformDroideka1"
+ },
+ {
+  "key": "bld_13",
+  "x": -4,
+  "z": 5,
+  "uid": "empireCreditGenerator9"
+ },
+ {
+  "key": "bld_14",
+  "x": -1,
+  "z": 5,
+  "uid": "empireCreditGenerator9"
+ },
+ {
+  "key": "bld_15",
+  "x": 2,
+  "z": 5,
+  "uid": "empireCreditGenerator9"
+ },
+ {
+  "key": "bld_16",
+  "x": 5,
+  "z": 1,
+  "uid": "empireCreditGenerator9"
+ },
+ {
+  "key": "bld_17",
+  "x": 5,
+  "z": 5,
+  "uid": "empireCreditGenerator9"
+ },
+ {
+  "key": "bld_18",
+  "x": -7,
+  "z": -9,
+  "uid": "empireCreditGenerator9"
+ },
+ {
+  "key": "bld_19",
+  "x": -2,
+  "z": -9,
+  "uid": "empireMaterialsGenerator9"
+ },
+ {
+  "key": "bld_20",
+  "x": 3,
+  "z": -9,
+  "uid": "empireMaterialsGenerator9"
+ },
+ {
+  "key": "bld_21",
+  "x": 6,
+  "z": -9,
+  "uid": "empireMaterialsGenerator9"
+ },
+ {
+  "key": "bld_22",
+  "x": 6,
+  "z": -5,
+  "uid": "empireMaterialsGenerator9"
+ },
+ {
+  "key": "bld_23",
+  "x": -10,
+  "z": -9,
+  "uid": "empireMaterialsGenerator9"
+ },
+ {
+  "key": "bld_24",
+  "x": 6,
+  "z": -2,
+  "uid": "empireMaterialsGenerator9"
+ },
+ {
+  "key": "bld_25",
+  "x": -11,
+  "z": -4,
+  "uid": "empireContrabandGenerator9"
+ },
+ {
+  "key": "bld_26",
+  "x": -9,
+  "z": 8,
+  "uid": "empireContrabandGenerator9"
+ },
+ {
+  "key": "bld_27",
+  "x": -5,
+  "z": 8,
+  "uid": "empireContrabandGenerator9"
+ },
+ {
+  "key": "bld_28",
+  "x": -18,
+  "z": -18,
+  "uid": "empireStarport9"
+ },
+ {
+  "key": "bld_29",
+  "x": -18,
+  "z": -12,
+  "uid": "empireStarport9"
+ },
+ {
+  "key": "bld_30",
+  "x": -18,
+  "z": -5,
+  "uid": "empireStarport9"
+ },
+ {
+  "key": "bld_31",
+  "x": -12,
+  "z": -16,
+  "uid": "empireFactory9"
+ },
+ {
+  "key": "bld_32",
+  "x": -5,
+  "z": -16,
+  "uid": "empireFactory9"
+ },
+ {
+  "key": "bld_33",
+  "x": -16,
+  "z": 2,
+  "uid": "empireTacticalCommand9"
+ },
+ {
+  "key": "bld_34",
+  "x": -16,
+  "z": 6,
+  "uid": "empireFleetCommand9"
+ },
+ {
+  "key": "bld_35",
+  "x": -16,
+  "z": 12,
+  "uid": "empireArmory5"
+ },
+ {
+  "key": "bld_36",
+  "x": 0,
+  "z": 8,
+  "uid": "empireScoutTower1"
+ },
+ {
+  "key": "bld_37",
+  "x": 5,
+  "z": 8,
+  "uid": "empireOffenseLab9"
+ },
+ {
+  "key": "bld_38",
+  "x": 8,
+  "z": 3,
+  "uid": "empireBarracks9"
+ },
+ {
+  "key": "bld_39",
+  "x": 8,
+  "z": 7,
+  "uid": "empireBarracks9"
+ },
+ {
+  "key": "bld_40",
+  "x": 1,
+  "z": -15,
+  "uid": "empireBarracks9"
+ },
+ {
+  "key": "bld_41",
+  "x": 4,
+  "z": -15,
+  "uid": "empireBarracks9"
+ },
+ {
+  "key": "bld_42",
+  "x": 7,
+  "z": -15,
+  "uid": "empireNavigationCenter5"
+ },
+ {
+  "key": "bld_43",
+  "x": 12,
+  "z": -15,
+  "uid": "empireContrabandCantina6"
+ },
+ {
+  "key": "bld_44",
+  "x": 1,
+  "z": -10,
+  "uid": "empireShieldGenerator9"
+ },
+ {
+  "key": "bld_45",
+  "x": -11,
+  "z": -1,
+  "uid": "empireShieldGenerator9"
+ },
+ {
+  "key": "bld_46",
+  "x": -11,
+  "z": 3,
+  "uid": "empireShieldGenerator9"
+ },
+ {
+  "key": "bld_47",
+  "x": -4,
+  "z": -11,
+  "uid": "empireShieldGenerator9"
+ },
+ {
+  "key": "bld_48",
+  "x": -4,
+  "z": 0,
+  "uid": "empireDroidHut1"
+ },
+ {
+  "key": "bld_49",
+  "x": -7,
+  "z": -3,
+  "uid": "empireTrapStrikeGeneric9"
+ },
+ {
+  "key": "bld_50",
+  "x": -7,
+  "z": -2,
+  "uid": "empireTrapStrikeGeneric9"
+ },
+ {
+  "key": "bld_51",
+  "x": -5,
+  "z": 6,
+  "uid": "empireTrapStrikeGeneric9"
+ },
+ {
+  "key": "bld_52",
+  "x": 6,
+  "z": 4,
+  "uid": "empireTrapStrikeGeneric9"
+ },
+ {
+  "key": "bld_53",
+  "x": -4,
+  "z": -7,
+  "uid": "empireTrapStrikeGeneric9"
+ },
+ {
+  "key": "bld_54",
+  "x": -3,
+  "z": -7,
+  "uid": "empireTrapStrikeGeneric9"
+ },
+ {
+  "key": "bld_55",
+  "x": -8,
+  "z": -3,
+  "uid": "empireTrapStrikeAOE9"
+ },
+ {
+  "key": "bld_56",
+  "x": -7,
+  "z": 3,
+  "uid": "empireTrapStrikeAOE9"
+ },
+ {
+  "key": "bld_57",
+  "x": -8,
+  "z": -2,
+  "uid": "empireTrapStrikeAOE9"
+ },
+ {
+  "key": "bld_58",
+  "x": -5,
+  "z": 7,
+  "uid": "empireTrapStrikeAOE9"
+ },
+ {
+  "key": "bld_59",
+  "x": 6,
+  "z": -6,
+  "uid": "empireTrapStrikeHeavy8"
+ },
+ {
+  "key": "bld_60",
+  "x": 7,
+  "z": -6,
+  "uid": "empireTrapStrikeHeavy8"
+ },
+ {
+  "key": "bld_61",
+  "x": -6,
+  "z": 3,
+  "uid": "empireTrapDropship9"
+ },
+ {
+  "key": "bld_62",
+  "x": -6,
+  "z": -3,
+  "uid": "empireTrapDropship9"
+ },
+ {
+  "key": "bld_63",
+  "x": 14,
+  "z": -6,
+  "uid": "empireBurstTurret9"
+ },
+ {
+  "key": "bld_64",
+  "x": 14,
+  "z": -1,
+  "uid": "empireRapidFireTurret9"
+ },
+ {
+  "key": "bld_65",
+  "x": 14,
+  "z": 4,
+  "uid": "empireRocketTurret9"
+ },
+ {
+  "key": "bld_66",
+  "x": 14,
+  "z": 9,
+  "uid": "empireMortar9"
+ },
+ {
+  "key": "bld_67",
+  "x": 7,
+  "z": 14,
+  "uid": "empireSonicTurret9"
+ },
+ {
+  "key": "bld_68",
+  "x": 2,
+  "z": 14,
+  "uid": "empireBurstTurret9"
+ },
+ {
+  "key": "bld_69",
+  "x": -4,
+  "z": 14,
+  "uid": "empireRapidFireTurret9"
+ },
+ {
+  "key": "bld_70",
+  "x": -8,
+  "z": 14,
+  "uid": "empireRocketTurret9"
+ },
+ {
+  "key": "bld_71",
+  "x": -11,
+  "z": 14,
+  "uid": "empireMortar9"
+ },
+ {
+  "key": "bld_72",
+  "x": -19,
+  "z": 4,
+  "uid": "empireSonicTurret9"
+ },
+ {
+  "key": "bld_73",
+  "x": -19,
+  "z": 7,
+  "uid": "empireBurstTurret9"
+ },
+ {
+  "key": "bld_74",
+  "x": -11,
+  "z": -19,
+  "uid": "empireRapidFireTurret9"
+ },
+ {
+  "key": "bld_75",
+  "x": -8,
+  "z": -19,
+  "uid": "empireRocketTurret9"
+ },
+ {
+  "key": "bld_76",
+  "x": -5,
+  "z": -19,
+  "uid": "empireMortar9"
+ },
+ {
+  "key": "bld_77",
+  "x": -2,
+  "z": -19,
+  "uid": "empireSonicTurret9"
+ },
+ {
+  "key": "bld_78",
+  "x": 2,
+  "z": -18,
+  "uid": "empireBurstTurret9"
+ },
+ {
+  "key": "bld_79",
+  "x": 6,
+  "z": -18,
+  "uid": "empireRapidFireTurret9"
+ },
+ {
+  "key": "bld_80",
+  "x": 14,
+  "z": -11,
+  "uid": "empireRocketTurret9"
+ },
+ {
+  "key": "bld_81",
+  "x": -12,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_82",
+  "x": -11,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_83",
+  "x": -10,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_84",
+  "x": -9,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_85",
+  "x": -8,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_86",
+  "x": -7,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_87",
+  "x": -6,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_88",
+  "x": -5,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_89",
+  "x": -4,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_90",
+  "x": -3,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_91",
+  "x": -2,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_92",
+  "x": -1,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_93",
+  "x": 0,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_94",
+  "x": 1,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_95",
+  "x": 2,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_96",
+  "x": 3,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_97",
+  "x": 4,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_98",
+  "x": 5,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_99",
+  "x": 6,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_100",
+  "x": 7,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_101",
+  "x": 8,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_102",
+  "x": 9,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_103",
+  "x": 10,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_104",
+  "x": 11,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_105",
+  "x": 12,
+  "z": -12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_106",
+  "x": 12,
+  "z": -11,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_107",
+  "x": 12,
+  "z": -10,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_108",
+  "x": 12,
+  "z": -9,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_109",
+  "x": 12,
+  "z": -8,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_110",
+  "x": 12,
+  "z": -7,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_111",
+  "x": 12,
+  "z": -6,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_112",
+  "x": 12,
+  "z": -5,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_113",
+  "x": 12,
+  "z": -4,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_114",
+  "x": 12,
+  "z": -3,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_115",
+  "x": 12,
+  "z": -2,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_116",
+  "x": 12,
+  "z": -1,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_117",
+  "x": 12,
+  "z": 0,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_118",
+  "x": 12,
+  "z": 1,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_119",
+  "x": 12,
+  "z": 2,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_120",
+  "x": 12,
+  "z": 3,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_121",
+  "x": 12,
+  "z": 4,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_122",
+  "x": 12,
+  "z": 5,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_123",
+  "x": 12,
+  "z": 6,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_124",
+  "x": 12,
+  "z": 7,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_125",
+  "x": 12,
+  "z": 8,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_126",
+  "x": 12,
+  "z": 9,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_127",
+  "x": 12,
+  "z": 10,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_128",
+  "x": 12,
+  "z": 11,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_129",
+  "x": 12,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_130",
+  "x": 11,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_131",
+  "x": 10,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_132",
+  "x": 9,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_133",
+  "x": 8,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_134",
+  "x": 7,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_135",
+  "x": 6,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_136",
+  "x": 5,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_137",
+  "x": 4,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_138",
+  "x": 3,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_139",
+  "x": 2,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_140",
+  "x": 1,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_141",
+  "x": 0,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_142",
+  "x": -1,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_143",
+  "x": -2,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_144",
+  "x": -3,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_145",
+  "x": -4,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_146",
+  "x": -5,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_147",
+  "x": -6,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_148",
+  "x": -7,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_149",
+  "x": -8,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_150",
+  "x": -9,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_151",
+  "x": -10,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_152",
+  "x": -11,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_153",
+  "x": -12,
+  "z": 12,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_154",
+  "x": -12,
+  "z": 11,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_155",
+  "x": -12,
+  "z": 10,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_156",
+  "x": -12,
+  "z": 9,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_157",
+  "x": -12,
+  "z": 8,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_158",
+  "x": -12,
+  "z": 7,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_159",
+  "x": -12,
+  "z": 6,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_160",
+  "x": -12,
+  "z": 5,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_161",
+  "x": -12,
+  "z": 4,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_162",
+  "x": -12,
+  "z": 3,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_163",
+  "x": -12,
+  "z": 2,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_164",
+  "x": -12,
+  "z": 1,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_165",
+  "x": -12,
+  "z": 0,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_166",
+  "x": -12,
+  "z": -1,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_167",
+  "x": -12,
+  "z": -2,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_168",
+  "x": -12,
+  "z": -3,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_169",
+  "x": -12,
+  "z": -4,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_170",
+  "x": -12,
+  "z": -5,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_171",
+  "x": -12,
+  "z": -6,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_172",
+  "x": -12,
+  "z": -7,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_173",
+  "x": -12,
+  "z": -8,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_174",
+  "x": -12,
+  "z": -9,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_175",
+  "x": -12,
+  "z": -10,
+  "uid": "empireWall9"
+ },
+ {
+  "key": "bld_176",
+  "x": -12,
+  "z": -11,
+  "uid": "empireWall9"
+ }
+]

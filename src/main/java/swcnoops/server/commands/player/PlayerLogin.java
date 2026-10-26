@@ -21,6 +21,7 @@ import swcnoops.server.session.inventory.TroopUpgrade;
 import swcnoops.server.session.inventory.Troops;
 import swcnoops.server.session.training.BuildUnit;
 import swcnoops.server.session.training.TrainingManager;
+import swcnoops.server.session.AutoRefill;
 import swcnoops.server.session.PlayerSession;
 import swcnoops.server.session.training.DeployableQueue;
 
@@ -54,7 +55,9 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
                 .loginPlayerSession(arguments.getPlayerId());
 
         playerSession.playerLogin(time);
-        PlayerLoginCommandResult response = loadPlayerTemplate();
+        // The client only learns its army at login, so this is where a refill becomes visible.
+        AutoRefill.apply(playerSession, "login");
+        PlayerLoginCommandResult response = loadPlayerTemplate(playerSession);
         playerSession.getPlayerSettings().setTimeZoneOffset(arguments.getTimeZoneOffset());
         mapLoginForPlayer(response, playerSession, time);
         playerSession.savePlayerLogin(arguments.getTimeZoneOffset(), time);
@@ -62,9 +65,18 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
         return response;
     }
 
-    private PlayerLoginCommandResult loadPlayerTemplate() throws Exception {
+    private PlayerLoginCommandResult loadPlayerTemplate(PlayerSession playerSession) throws Exception {
+        // Fields the login does not fill from the player's own data (armory,
+        // shard shop, tutorial flags in sharedPrefs) come straight from the
+        // template. A player still in the tutorial gets the new-player one, so
+        // those fields match a fresh start; everyone else keeps the usual one.
+        String currentQuest = playerSession.getPlayerSettings().getCurrentQuest();
+        boolean inTutorial = currentQuest != null && !currentQuest.isEmpty();
+        String template = inTutorial
+                ? ServiceFactory.instance().getConfig().newPlayerTemplate
+                : ServiceFactory.instance().getConfig().playerLoginTemplate;
         PlayerLoginCommandResult response = ServiceFactory.instance().getJsonParser()
-                .toObjectFromResource(ServiceFactory.instance().getConfig().playerLoginTemplate, PlayerLoginCommandResult.class);
+                .toObjectFromResource(template, PlayerLoginCommandResult.class);
         return response;
     }
 
