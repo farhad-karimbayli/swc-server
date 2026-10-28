@@ -31,3 +31,8 @@ player_backup/
 
 # User-specific auto-refill configuration (use refill.json.example as template)
 refill.json
+
+# Python
+__pycache__/
+*.pyc
+

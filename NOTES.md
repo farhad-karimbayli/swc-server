@@ -587,3 +587,36 @@ queued (120 s, 920 credits each). Not yet seen on the phone.
 Missing for this unit: audio_deathtrooper, unittransport_event_troop_deathtrooper.
 The Mac was on 10.124.18.139 at the time (away from the home network), so the
 .110 apk could not reach it; nothing was rebuilt for that.
+
+## 2026-10-28 — Authentic story mission battle maps regenerated
+
+Previous battle generator had two problems:
+1. It named files using an ad-hoc tokenized scheme (`mis_<short>_<num>_<fac>.json`) instead of `BattleData.assetName`. The client requests `assetName.json`, so almost every request hit the fallback generic `_default_mission.json` base.
+2. It generated generic cookie-cutter HQ2-5 Rebel/Empire bases for every mission, completely ignoring story context (Tusken camps, Sand People sacred waters, Womp Rat nests, Krayt dragon graveyards, Rancor dens, Smuggler/Mercenary hideouts, Shipwrecks, and specific boss fights). Furthermore, mission encounter triggers (`DefenseEncountersProfiles`), scripts (`BattleScripts`), and objective targets (`Conditions`) were missing their required buildings.
+
+`tools/gen_mission_battles.py`:
+- Analyzes all 168 PvE battle missions across 147 unique battle assets from `cae.json`, `BattleData`, `StoryActions`, `LocalizedStrings`, `DefenseEncountersProfiles`, and `Conditions`.
+- Categorizes missions into: Womp Rat Infestations, Tusken Raider Camps, Smuggler/Mercenary Bases, Krayt Dragon Graveyard, Rancor Dens, Atom Edge Shipwrecks, Rebel Military Outposts, Empire Garrisons, and Planetary Outposts across 6 planets.
+- Correctly scales difficulty and HQ level to match the campaign curve (HQ 1-3 early, HQ 3-5 mid, HQ 5-7 late, HQ 8-9 bosses).
+- Places all mandatory buildings required by encounter triggers and victory conditions (e.g. `storyKraytBones1`, `smugglerShieldGenerator5`, `tuskenHouseLarge2`, `rebelOffenseLab1`, `rebelDefenseGenerator`, `storyEmpShieldGen1`, `rebelTacticalCommand4`, boss HQs).
+- Ensures valid non-overlapping coordinates within the grid (-22..21) and sets the authentic planet identifier.
+- Generates all 147 primary `assetName.json` files and creates aliases (by map UID, mission UID, and legacy tokenized names) in both `swcFiles/1541022029/battles/` and `swcFiles/battles/`. Preserves the 3 original surviving maps (`Fue_impShow_00.json`, `Fue_rebShow_00.json`, `mis_utts_2.json`).
+
+## 2026-10-28 — Intelligent substitution of missing critical Android asset bundles
+
+Audited missing asset bundles: out of 2,187 Android bundles in the manifest, 972 were missing from disk.
+Real game logs showed recurring 404s on specific assets during base load and campaign navigation (`tradecenter_emp-mod-up11_fillstates`, `chap_btn_cmp_11_tbft_e`, `spiderdroidholo_emp-mod`, `healingshipcargo_emp-mod`, `audio_empiredemodroid`, `audio_rebeldemodroid`).
+
+`tools/substitute_missing_bundles.py`:
+- Performs type-safe semantic substitution for 139 missing bundles:
+  - All 30 missing `*_fillstates` (matched to closest level/opposite faction fillstate)
+  - All 9 missing `chap_btn_cmp_*` chapter buttons (matched to opposite-faction chapter buttons)
+  - All 46 missing `*holo*` (hologram miniatures and dialogue transmission portraits)
+  - All 21 missing `audio_*` sound effects (matched to droid/unit sound banks)
+  - 25 missing `*-up<lvl>` building upgrade models (matched to adjacent upgrade levels)
+  - Starships, troop transports and skin variants
+- Copies/links each asset into `swcFiles/<v>/assetbundles/android/`.
+- Recalculates the CRC32 of each file and updates the corresponding entry in `__manifest_zyngaswc_prod.02045.json` so Unity's cache-and-download verification passes with zero CRC mismatches. Backup in `__manifest_...json.before-substitutions`.
+- Android bundles on disk increased from 1,215 to 1,354. Verified 1,354 / 1,354 with zero CRC mismatches.
+
+
