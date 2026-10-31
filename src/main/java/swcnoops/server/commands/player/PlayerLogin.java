@@ -361,9 +361,9 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
             GameDataManager gameDataManager = ServiceFactory.instance().getGameDataManager();
             donatedTroops.forEach((donatedUid, donatedByGroup) -> {
                 TroopData troopData = gameDataManager.getTroopDataByUid(donatedUid);
-                TroopData playersTroopData = playerSession.getTroopInventory().getTroopByUnitId(troopData.getUnitId());
-                if (playersTroopData != null) {
-                    if (playersTroopData.getLevel() > troopData.getLevel()) {
+                if (troopData != null && playerSession.getTroopInventory() != null) {
+                    TroopData playersTroopData = playerSession.getTroopInventory().getTroopByUnitId(troopData.getUnitId());
+                    if (playersTroopData != null && playersTroopData.getLevel() > troopData.getLevel()) {
                         donatedUid = playersTroopData.getUid();
                     }
                 }

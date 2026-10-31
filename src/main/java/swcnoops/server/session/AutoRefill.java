@@ -4,6 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import swcnoops.server.Config;
 import swcnoops.server.ServiceFactory;
+import swcnoops.server.game.GameDataManager;
+import swcnoops.server.game.TroopData;
+import swcnoops.server.model.DonatedTroops;
+import swcnoops.server.model.GuildDonatedTroops;
 import swcnoops.server.session.training.DeployableQueue;
 import swcnoops.server.session.training.TrainingManager;
 
@@ -21,6 +25,9 @@ import java.util.Map;
  * added, never taken away. The file is read on every call, so editing it needs no
  * restart.
  *
+ * Also refills the Squad Center (donatedTroops) for units listed in "squad" up to
+ * "squadAmount" (or amount if not set).
+ *
  * This works on the session in memory, which the caller saves afterwards. Editing
  * the database instead would be overwritten by the session's own copy.
  */
@@ -36,6 +43,8 @@ public final class AutoRefill {
         public List<String> hero;
         public List<String> specialAttack;
         public Map<String, Integer> champion;
+        public Integer squadAmount;
+        public List<String> squad;
     }
 
     private AutoRefill() {
@@ -67,6 +76,12 @@ public final class AutoRefill {
         added += topUp(trainingManager.getDeployableHero(), spec.hero, spec.amount);
         added += topUp(trainingManager.getDeployableSpecialAttack(), spec.specialAttack, spec.amount);
         added += topUp(trainingManager.getDeployableChampion(), spec.champion);
+
+        if (spec.squad != null && !spec.squad.isEmpty()) {
+            int squadTarget = (spec.squadAmount != null && spec.squadAmount > 0) ? spec.squadAmount : 30;
+            added += topUpSquad(playerSession, spec.squad, squadTarget);
+        }
+
         if (added > 0)
             LOG.info("auto refill after {} for {}: {} units added", reason, playerSession.getPlayerId(), added);
     }
@@ -95,5 +110,74 @@ public final class AutoRefill {
         if (added > 0)
             queue.initialiseDeployableUnits(units);
         return added;
+    }
+
+    private static int topUpSquad(PlayerSession playerSession, List<String> squadUnits, int amount) {
+        if (squadUnits == null || squadUnits.isEmpty())
+            return 0;
+
+        DonatedTroops donatedTroops = playerSession.getDonatedTroops();
+        if (donatedTroops == null)
+            return 0;
+
+        GameDataManager gameDataManager = ServiceFactory.instance().getGameDataManager();
+        String donorId = playerSession.getPlayerId();
+        int added = 0;
+
+        for (String unitName : squadUnits) {
+            String troopUid = resolveTroopUid(playerSession, gameDataManager, unitName);
+            if (troopUid == null)
+                continue;
+
+            GuildDonatedTroops guildDonatedTroops = donatedTroops.get(troopUid);
+            if (guildDonatedTroops == null) {
+                guildDonatedTroops = new GuildDonatedTroops();
+                guildDonatedTroops.put(donorId, amount);
+                donatedTroops.put(troopUid, guildDonatedTroops);
+                added += amount;
+            } else {
+                int currentTotal = guildDonatedTroops.values().stream().mapToInt(Integer::intValue).sum();
+                if (currentTotal < amount) {
+                    int diff = amount - currentTotal;
+                    int donorCurrent = guildDonatedTroops.getOrDefault(donorId, 0);
+                    guildDonatedTroops.put(donorId, donorCurrent + diff);
+                    added += diff;
+                }
+            }
+        }
+        return added;
+    }
+
+    private static String resolveTroopUid(PlayerSession playerSession, GameDataManager gameDataManager, String unitName) {
+        if (unitName == null || unitName.trim().isEmpty())
+            return null;
+
+        // 1. Check if unitName is already a valid UID in game data
+        TroopData directTroop = gameDataManager.getTroopDataByUid(unitName);
+        if (directTroop != null) {
+            return directTroop.getUid();
+        }
+
+        // 2. unitName is a unitId (e.g. "Storm", "ATAT", "2MTank") - resolve to max level for squad
+        TroopData lowestTroop = gameDataManager.getLowestLevelTroopDataByUnitId(unitName);
+        if (lowestTroop != null) {
+            int maxLvl = gameDataManager.getMaxlevelForTroopUnitId(lowestTroop.getUnitId());
+            if (maxLvl > 0) {
+                TroopData maxTroop = gameDataManager.getTroopDataByUnitId(lowestTroop.getUnitId(), maxLvl);
+                if (maxTroop != null) {
+                    return maxTroop.getUid();
+                }
+            }
+            return lowestTroop.getUid();
+        }
+
+        if (playerSession.getTroopInventory() != null) {
+            TroopData playerTroop = playerSession.getTroopInventory().getTroopByUnitId(unitName);
+            if (playerTroop != null) {
+                return playerTroop.getUid();
+            }
+        }
+
+        return null;
     }
 }

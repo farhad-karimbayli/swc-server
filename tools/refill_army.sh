@@ -15,6 +15,7 @@ ID="${1:-dad436c8-761c-4579-8a76-0f910850510d}"
 pkill -f swcnoops.server.SparkMain || true
 sleep 2
 docker cp "$ROOT/refill.json" swc-mongo:/tmp/refill.json
+docker cp "$ROOT/swcFiles/1584443067/patches/trp.json" swc-mongo:/tmp/trp.json
 docker exec swc-mongo mongosh swc --quiet --eval "
 const ID='$ID';
 const spec = JSON.parse(require('fs').readFileSync('/tmp/refill.json', 'utf8'));
@@ -38,8 +39,40 @@ for (const c in target) {
     }
   }
 }
+
+if (spec.squad && spec.squad.length > 0) {
+  const trp = JSON.parse(require('fs').readFileSync('/tmp/trp.json', 'utf8')).content.objects.TroopData;
+  const donated = p.playerSettings.donatedTroops || {};
+  const squadAmount = spec.squadAmount || 30;
+  let squadAdded = 0;
+  for (const u of spec.squad) {
+    let direct = trp.filter(t => t.uid === u);
+    let uid = null;
+    if (direct.length > 0) {
+      uid = direct[0].uid;
+    } else {
+      let matches = trp.filter(t => t.unitID === u);
+      if (matches.length > 0) {
+        matches.sort((a,b) => (parseInt(b.lvl)||1) - (parseInt(a.lvl)||1));
+        uid = matches[0].uid;
+      }
+    }
+    if (uid) {
+      donated[uid] = donated[uid] || {};
+      const current = Object.values(donated[uid]).reduce((a, b) => a + b, 0);
+      if (current < squadAmount) {
+        const diff = squadAmount - current;
+        donated[uid][ID] = (donated[uid][ID] || 0) + diff;
+        squadAdded += diff;
+      }
+    }
+  }
+  p.playerSettings.donatedTroops = donated;
+  added['squad'] = squadAdded;
+}
+
 db.player_backup.insertOne(Object.assign({}, p, { _id: ID + '@' + new Date().toISOString().replace(/[:.]/g, '-') + '-before-refill' }));
-db.player.updateOne({ _id: ID }, { \$set: { 'playerSettings.deployableTroops': now } });
+db.player.updateOne({ _id: ID }, { \$set: { 'playerSettings.deployableTroops': now, 'playerSettings.donatedTroops': p.playerSettings.donatedTroops } });
 print('refilled, added: ' + JSON.stringify(added));
 "
 
