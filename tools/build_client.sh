@@ -30,8 +30,8 @@ if [ -z "$ZIPALIGN" ] || [ -z "$APKSIGNER" ]; then
   for BT_DIR in \
     /opt/homebrew/share/android-commandlinetools/build-tools/* \
     "$HOME/Library/Android/sdk/build-tools"/* \
-    "$ANDROID_HOME/build-tools"/* 2>/dev/null; do
-    if [ -x "$BT_DIR/zipalign" ] && [ -x "$BT_DIR/apksigner" ]; then
+    "${ANDROID_HOME:-/nonexistent}/build-tools"/*; do
+    if [ -d "$BT_DIR" ] && [ -x "$BT_DIR/zipalign" ] && [ -x "$BT_DIR/apksigner" ]; then
       ZIPALIGN="$BT_DIR/zipalign"
       APKSIGNER="$BT_DIR/apksigner"
       break
@@ -54,36 +54,64 @@ if [ ! -f "$KEYSTORE" ]; then
   exit 1
 fi
 
-# Find source APK if not provided
-if [ -z "$SOURCE_APK" ]; then
-  # Look for existing APK in client/ or parent directory
-  if [ -f "$ROOT/client/swc-base.apk" ]; then
-    SOURCE_APK="$ROOT/client/swc-base.apk"
-  else
-    SOURCE_APK="$(find "$ROOT/client" "$ROOT/.." -maxdepth 1 -name "*.apk" 2>/dev/null | head -n1 || true)"
-  fi
+# Find source/template APK and clean APK
+PRISTINE_APK=""
+TEMPLATE_APK=""
+
+# Check if explicitly provided
+if [ -n "$SOURCE_APK" ] && [ -f "$SOURCE_APK" ]; then
+  PRISTINE_APK="$SOURCE_APK"
 fi
 
-if [ -z "$SOURCE_APK" ] || [ ! -f "$SOURCE_APK" ]; then
-  echo "Error: Source APK not found." >&2
-  echo "Please provide the path to your Star Wars Commander APK (e.g. star-wars-commander-7-8-1-253.apk):" >&2
-  echo "  $0 $TARGET_HOST /path/to/swc.apk" >&2
+# Locate pristine APK with original metadata
+if [ -z "$PRISTINE_APK" ]; then
+  for CANDIDATE in \
+    "$ROOT/client/star-wars-commander-7-8-1-253.apk" \
+    "$ROOT/../star-wars-commander-7-8-1-253.apk" \
+    "$ROOT/client/swc-base.apk" \
+    "$ROOT/../swc-base.apk"; do
+    if [ -f "$CANDIDATE" ]; then
+      PRISTINE_APK="$CANDIDATE"
+      break
+    fi
+  done
+fi
+
+# Locate template APK (one that already has android:usesCleartextTraffic="true")
+for CANDIDATE in \
+  "$ROOT/client"/swc-patched-*.apk \
+  "$PRISTINE_APK"; do
+  if [ -f "$CANDIDATE" ]; then
+    TEMPLATE_APK="$CANDIDATE"
+    break
+  fi
+done
+
+if [ -z "$PRISTINE_APK" ] || [ ! -f "$PRISTINE_APK" ]; then
+  echo "Error: Pristine base APK (with original metadata) not found." >&2
+  echo "Please provide the path to star-wars-commander-7-8-1-253.apk:" >&2
+  echo "  $0 $TARGET_HOST /path/to/star-wars-commander-7-8-1-253.apk" >&2
   exit 1
 fi
 
-echo "==> Using source APK: $SOURCE_APK"
+if [ -z "$TEMPLATE_APK" ] || [ ! -f "$TEMPLATE_APK" ]; then
+  TEMPLATE_APK="$PRISTINE_APK"
+fi
+
+echo "==> Pristine APK:     $PRISTINE_APK"
+echo "==> Template APK:     $TEMPLATE_APK"
 echo "==> Target server:    $TARGET_HOST"
 
 TMPDIR="$(mktemp -d)"
 trap 'rm -rf "$TMPDIR"' EXIT
 
 WORK_APK="$TMPDIR/working.apk"
-cp "$SOURCE_APK" "$WORK_APK"
+cp "$TEMPLATE_APK" "$WORK_APK"
 
 METADATA_REL_PATH="assets/bin/Data/Managed/Metadata/global-metadata.dat"
 mkdir -p "$TMPDIR/extracted"
-echo "==> Extracting $METADATA_REL_PATH..."
-unzip -q -j "$WORK_APK" "$METADATA_REL_PATH" -d "$TMPDIR/extracted"
+echo "==> Extracting $METADATA_REL_PATH from pristine APK..."
+unzip -q -j "$PRISTINE_APK" "$METADATA_REL_PATH" -d "$TMPDIR/extracted"
 
 echo "==> Patching metadata with tools/patch_metadata.py..."
 python3 "$ROOT/tools/patch_metadata.py" "$TMPDIR/extracted/global-metadata.dat" "$TARGET_HOST"
@@ -99,8 +127,8 @@ echo "==> Updating APK with patched metadata..."
 echo "==> Removing existing signatures..."
 zip -q -d "$WORK_APK" "META-INF/*.SF" "META-INF/*.RSA" "META-INF/*.DSA" "META-INF/SWC.*" "META-INF/MANIFEST.MF" 2>/dev/null || true
 
-SAFE_HOST="$(echo "$TARGET_HOST" | sed 's/[^a-zA-Z0-9._-]/_/g')"
-OUTPUT_APK="$ROOT/client/swc-patched-${SAFE_HOST}.apk"
+HOST_IP="$(echo "$TARGET_HOST" | cut -d: -f1)"
+OUTPUT_APK="$ROOT/client/swc-patched-${HOST_IP}.apk"
 ALIGNED_APK="$TMPDIR/aligned.apk"
 
 echo "==> Running zipalign..."
