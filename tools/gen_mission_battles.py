@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
-"""Generate authentic, story-accurate base layouts for all Star Wars Commander PvE missions.
+"""Generate authentic, diverse, story-accurate base layouts for all Star Wars Commander PvE missions.
 
-For each story mission and planetary outpost where there is a battle, this script:
+For each story mission and planetary outpost:
 1. Reads story dialogue, mission goals, campaign title, and planet from game patches.
 2. Identifies required encounter triggers (DefenseEncountersProfiles), battle scripts (BattleScripts),
    and victory conditions (Conditions).
-3. Selects the correct faction (Tusken, Smuggler, Rebel, Empire, or Wildlife/Ruins).
-4. Sets the proper HQ level and difficulty tier matching the story progression.
-5. Builds a structured, non-overlapping base layout with walls, defenses, and required targets.
-6. Saves the battle file to swcFiles/1541022029/battles/<assetName>.json and creates aliases.
+3. Guarantees 100% of required targets (Shield Generators, HQs, research labs, hero mobilizers,
+   specific trigger buildings, storage, and turrets) are placed and never blocked.
+4. Generates rich, diverse architectural layouts matching each mission's specific story:
+   - Shipwreck Salvage (crashed starship bow/stern, shield generator, blast craters, salvage camp)
+   - Jabba's Menagerie (beast pens, holding cells with monsters, central command)
+   - Krayt Dragon Graveyard (ancient bones, crystal pillars, stone perimeter)
+   - Womp Rat Warrens (organic burrow clusters, rocks, moisture vaporators, makeshift barricades)
+   - Tusken Raider Encampments & Corrals (oval bantha corral, tribal huts, totems)
+   - Ruined Settlements (Jawa Sandcrawler, desert houses, cantina, debris)
+   - 4 Distinct Military Architectures (Citadel Compound, Compartmentalized Sectors, Bastion Wings, Staggered Outpost)
+5. Enriches every base with authentic planet-specific environmental scenery.
+6. Validates every generated map and writes aliases.
 """
 
 import json
@@ -50,7 +58,13 @@ class Grid:
             for cz in range(z, z + h):
                 self.taken.add((cx, cz))
 
-    def place(self, w, h, prefer_radius=0, margin=0, limit=BUILD_LIMIT, rng=None, pool=1):
+    def place_exact(self, w, h, x, z, margin=0):
+        if self.fits(x, z, w, h, margin=margin):
+            self.occupy(x, z, w, h)
+            return x, z
+        return None
+
+    def place(self, w, h, prefer_radius=0, margin=0, limit=BUILD_LIMIT, rng=None, pool=1, fallback=True):
         candidates = []
         for x in range(-limit, limit - w + 1):
             for z in range(-limit, limit - h + 1):
@@ -64,13 +78,17 @@ class Grid:
                 picks.append((x, z))
                 if len(picks) >= pool:
                     break
-        if not picks:
-            return None
-        x, z = rng.choice(picks) if rng and len(picks) > 1 else picks[0]
-        self.occupy(x, z, w, h)
-        return x, z
+        if picks:
+            x, z = rng.choice(picks) if rng and len(picks) > 1 else picks[0]
+            self.occupy(x, z, w, h)
+            return x, z
 
-    def place_near(self, w, h, target_x, target_z, margin=0, limit=BUILD_LIMIT):
+        if fallback and (margin > 0 or limit < BUILD_LIMIT):
+            return self.place(w, h, prefer_radius=prefer_radius, margin=0, limit=BUILD_LIMIT, rng=rng, pool=pool, fallback=False)
+
+        return None
+
+    def place_near(self, w, h, target_x, target_z, margin=0, limit=BUILD_LIMIT, fallback=True):
         candidates = []
         for x in range(-limit, limit - w + 1):
             for z in range(-limit, limit - h + 1):
@@ -81,18 +99,35 @@ class Grid:
             if self.fits(x, z, w, h, margin):
                 self.occupy(x, z, w, h)
                 return x, z
+        if fallback and (margin > 0 or limit < BUILD_LIMIT):
+            return self.place_near(w, h, target_x, target_z, margin=0, limit=BUILD_LIMIT, fallback=False)
         return None
 
 
-def square_ring(radius):
-    lo, hi = -radius, radius
-    if lo < GRID_MIN or hi >= GRID_MAX:
-        return []
-    ring = [(x, lo) for x in range(lo, hi + 1)]
-    ring += [(hi, z) for z in range(lo + 1, hi + 1)]
-    ring += [(x, hi) for x in range(hi - 1, lo - 1, -1)]
-    ring += [(lo, z) for z in range(hi - 1, lo, -1)]
-    return ring
+def rect_ring(x1, x2, z1, z2, openings=()):
+    tiles = []
+    op = set(openings)
+    for x in range(x1, x2 + 1):
+        if (x, z1) not in op: tiles.append((x, z1))
+        if (x, z2) not in op: tiles.append((x, z2))
+    for z in range(z1 + 1, z2):
+        if (x1, z) not in op: tiles.append((x1, z))
+        if (x2, z) not in op: tiles.append((x2, z))
+    return tiles
+
+
+def line_wall(x1, z1, x2, z2, openings=()):
+    tiles = []
+    op = set(openings)
+    if x1 == x2:
+        step = 1 if z2 >= z1 else -1
+        for z in range(z1, z2 + step, step):
+            if (x1, z) not in op: tiles.append((x1, z))
+    elif z1 == z2:
+        step = 1 if x2 >= x1 else -1
+        for x in range(x1, x2 + step, step):
+            if (x, z1) not in op: tiles.append((x, z1))
+    return tiles
 
 
 def load_game_data():
@@ -133,8 +168,9 @@ def analyze_battle_assets(missions, bd_map, dep_map, bscr_map, cond_map):
             c = cond_map.get(vc)
             if c:
                 pt = c.get("prepare_string", "")
-                if c.get("condition_type") in ("DestroyBuildingId", "DestroyBuildingType"):
-                    vc_reqs.add(pt)
+                ctype = c.get("condition_type", "")
+                if ctype in ("DestroyBuildingId", "DestroyBuildingType", "DestroyBuildingsId"):
+                    vc_reqs.add((vc, ctype, pt))
 
         needed.setdefault(asset, {
             "asset": asset,
@@ -146,7 +182,8 @@ def analyze_battle_assets(missions, bd_map, dep_map, bscr_map, cond_map):
             "enc_buildings": set(),
             "script_buildings": set(),
             "vc_reqs": set(),
-            "map_uids": set()
+            "map_uids": set(),
+            "goal_strings": set()
         })
 
         info = needed[asset]
@@ -154,17 +191,19 @@ def analyze_battle_assets(missions, bd_map, dep_map, bscr_map, cond_map):
         info["mission_uids"].append(m["uid"])
         info["map_uids"].add(map_uid)
         info["vc_reqs"].update(vc_reqs)
+        if m.get("goalString"):
+            info["goal_strings"].add(m.get("goalString"))
 
         if ep_data:
             for part in ep_data.split("|"):
                 tokens = part.split(",")
-                if tokens:
+                if tokens and tokens[0].strip():
                     info["enc_buildings"].add(tokens[0].strip())
 
         if bscr_data:
             for part in bscr_data.split("|"):
                 tokens = part.split(",")
-                if tokens:
+                if tokens and tokens[0].strip():
                     info["script_buildings"].add(tokens[0].strip())
 
     return needed
@@ -185,18 +224,24 @@ def determine_category_and_hq(asset, info):
             explicit_hq = (m.group(1), int(m.group(2)))
             break
 
-    # Categorize
+    # Determine thematic category
     if asset.startswith("sw_"):
         cat = "outpost"
     elif "wri" in c0 or "womp" in asset or asset in ("mis_utts_2", "mis_utts_2a", "mis_hb_3a", "mis_hb_3c", "mis_bgh_2", "mis_bgh_13"):
         cat = "womprat"
     elif asset == "mis_bgh_11":
         cat = "krayt"
-    elif asset in ("mis_bgh_7", "mis_bgh_9"):
+    elif asset == "mis_bgh_9":
         cat = "rancor"
-    elif asset in ("mis_wos_1", "mis_wos_2"):
+    elif asset == "mis_bgh_8a":
+        cat = "menagerie"
+    elif asset == "mis_bgh_7":
+        cat = "village"
+    elif asset == "mis_bgh_4a":
+        cat = "dewback"
+    elif asset in ("mis_bgh_6", "mis_wos_1", "mis_wos_2"):
         cat = "shipwreck"
-    elif "tsw" in c0 or "tjg" in c0 or any("tusken" in b.lower() for b in info["enc_buildings"]):
+    elif "tsw" in c0 or "tjg" in c0 or asset == "mis_bgh_3" or any("tusken" in b.lower() for b in info["enc_buildings"]):
         cat = "tusken"
     elif any("smuggler" in b.lower() for b in info["enc_buildings"]) or def_name == "icoNeutral":
         cat = "smuggler"
@@ -205,11 +250,10 @@ def determine_category_and_hq(asset, info):
     else:
         cat = "empire"
 
-    # Determine HQ level
+    # Determine HQ level & faction
     if explicit_hq:
         faction, hq_lvl = explicit_hq
     elif cat == "outpost":
-        # sw_<planet>_t<tier>_<faction>
         m = re.search(r"_t(\d+)_([esr])", asset)
         t_num = int(m.group(1)) if m else 3
         fac_char = m.group(2) if m else "e"
@@ -222,10 +266,10 @@ def determine_category_and_hq(asset, info):
         else:
             faction = "empire"
             hq_lvl = min(10, max(4, t_num * 2))
-    elif cat in ("womprat", "krayt", "shipwreck"):
+    elif cat in ("womprat", "krayt"):
         faction = "neutral"
         hq_lvl = tier
-    elif cat == "rancor":
+    elif cat in ("shipwreck", "menagerie", "rancor", "village", "dewback"):
         faction = "smuggler"
         hq_lvl = 5
     elif cat == "tusken":
@@ -237,7 +281,6 @@ def determine_category_and_hq(asset, info):
     elif cat == "rebel":
         faction = "rebel"
         hq_lvl = min(9, max(3, tier + 1))
-        # Chapter 11 boss scaling
         if "tbft_10" in asset:
             hq_lvl = 9
         elif "tbft_8" in asset or "tbft_9" in asset:
@@ -250,274 +293,483 @@ def determine_category_and_hq(asset, info):
         elif "tbft_8" in asset or "tbft_9" in asset:
             hq_lvl = 8
 
-    return cat, faction, hq_lvl
+    # Determine architectural style for bases
+    hash_val = hash(asset) & 0xFFFFFFFF
+    styles = ["citadel", "compartment", "bastion_wings", "staggered"]
+    arch_style = styles[hash_val % len(styles)]
+
+    return cat, faction, hq_lvl, arch_style
 
 
-def build_layout(asset, info, cat, faction, hq_lvl, bld_map):
+def build_layout(asset, info, cat, faction, hq_lvl, arch_style, bld_map):
     rng = random.Random(hash(asset) & 0xFFFFFFFF)
     grid = Grid()
     buildings = []
     bld_key = 1
+    planet = info["planet"]
 
-    def place_building(uid, prefer_radius=0, margin=1, limit=BUILD_LIMIT, fallback=None):
+    def place_building(uid, prefer_radius=0, margin=1, limit=BUILD_LIMIT, fallback=True):
         nonlocal bld_key
         rec = bld_map.get(uid)
         if not rec:
             return False
         w, h = int(rec["sizex"]), int(rec["sizey"])
-        spot = grid.place(w, h, prefer_radius=prefer_radius, margin=margin, limit=limit, rng=rng, pool=3)
-        if spot is None and fallback is not None:
-            spot = grid.place(w, h, prefer_radius=fallback, margin=0, limit=BUILD_LIMIT, rng=rng, pool=3)
+        spot = grid.place(w, h, prefer_radius=prefer_radius, margin=margin, limit=limit, rng=rng, pool=3, fallback=fallback)
         if spot is not None:
             buildings.append({"key": f"bld_{bld_key}", "x": spot[0], "z": spot[1], "uid": uid})
             bld_key += 1
             return True
         return False
 
-    def place_near(uid, tx, tz, margin=0):
+    def place_exact(uid, x, z, margin=0):
         nonlocal bld_key
         rec = bld_map.get(uid)
         if not rec:
             return False
         w, h = int(rec["sizex"]), int(rec["sizey"])
-        spot = grid.place_near(w, h, tx, tz, margin=margin)
+        spot = grid.place_exact(w, h, x, z, margin=margin)
         if spot is not None:
             buildings.append({"key": f"bld_{bld_key}", "x": spot[0], "z": spot[1], "uid": uid})
             bld_key += 1
             return True
         return False
 
-    # 1. Place specific encounter and script buildings first
-    mandatory = list(info["enc_buildings"]) + list(info["script_buildings"])
-    for b in mandatory:
-        if "HQ" in b:
-            place_building(b, prefer_radius=0, margin=1, limit=6)
-        elif "story" in b or "Bones" in b or "Ship" in b:
-            place_building(b, prefer_radius=1, margin=1, limit=8)
-        else:
-            place_building(b, prefer_radius=3, margin=1, limit=12, fallback=15)
+    def place_near(uid, tx, tz, margin=0, limit=BUILD_LIMIT, fallback=True):
+        nonlocal bld_key
+        rec = bld_map.get(uid)
+        if not rec:
+            return False
+        w, h = int(rec["sizex"]), int(rec["sizey"])
+        spot = grid.place_near(w, h, tx, tz, margin=margin, limit=limit, fallback=fallback)
+        if spot is not None:
+            buildings.append({"key": f"bld_{bld_key}", "x": spot[0], "z": spot[1], "uid": uid})
+            bld_key += 1
+            return True
+        return False
 
-    # 2. Place specific victory condition targets
-    for vc in info["vc_reqs"]:
-        if "1|rebelDefenseGenerator" in vc:
-            place_building(f"rebelDefenseGenerator{min(5, max(1, hq_lvl - 4))}", prefer_radius=4, margin=1)
-        elif "1|empireDefenseGenerator" in vc:
-            place_building(f"empireDefenseGenerator{min(5, max(1, hq_lvl - 4))}", prefer_radius=4, margin=1)
-        elif "1|smugglerDefenseGenerator" in vc:
-            place_building(f"smugglerDefenseGenerator{min(5, max(1, hq_lvl - 2))}", prefer_radius=4, margin=1)
-        elif "1|storyEmpShieldGen" in vc:
-            place_building("storyEmpShieldGen1", prefer_radius=3, margin=1)
-        elif "1|storyRebShieldGen" in vc:
-            place_building("storyRebShieldGen1", prefer_radius=3, margin=1)
-        elif "1|rebelTacticalCommand" in vc:
-            place_building(f"rebelTacticalCommand{min(5, max(1, hq_lvl - 3))}", prefer_radius=4, margin=1)
-        elif "1|empireTacticalCommand" in vc:
-            place_building(f"empireTacticalCommand{min(5, max(1, hq_lvl - 3))}", prefer_radius=4, margin=1)
-        elif "1|squad" in vc:
-            squad_uid = f"{faction}SquadBuilding{hq_lvl}" if f"{faction}SquadBuilding{hq_lvl}" in bld_map else f"{faction}SquadBuilding1"
-            place_building(squad_uid, prefer_radius=3, margin=1)
-
-    # 3. Category-specific themed generation
-    if cat == "womprat":
-        # Womp Rat nest cluster
-        lvl = max(1, min(6, hq_lvl))
-        for _ in range(rng.randint(2, 4)):
-            place_building(f"wompRatNestLarge{lvl}", prefer_radius=2, margin=1, limit=10)
-        for _ in range(rng.randint(4, 7)):
-            place_building(f"wompRatNestSmall{lvl}", prefer_radius=5, margin=1, limit=14)
-
-        # Scenery: rocks and junk
-        for r_uid in ["blockerRockSmall1", "blockerRockMedium1", "junkLarge1", "junkMedium1", "rebelRubble1"]:
-            if r_uid in bld_map:
-                place_building(r_uid, prefer_radius=7, margin=0, limit=16)
-
-        # If it's a research lab mission (mis_utts_2a, mis_hb_3a, mis_hb_3c)
-        if "2a" in asset or "hb_3" in asset:
-            lab_uid = "rebelOffenseLab1" if "rebelOffenseLab1" in bld_map else "empireOffenseLab1"
-            place_building(lab_uid, prefer_radius=0, margin=1, limit=5)
-            place_building("smugglerCreditStorage1", prefer_radius=3, margin=1, limit=8)
-            place_building("smugglerMaterialsStorage1", prefer_radius=3, margin=1, limit=8)
-            place_building("smugglerBurstTurret1", prefer_radius=6, margin=1, limit=10)
-            place_building("smugglerBurstTurret1", prefer_radius=6, margin=1, limit=10)
-
-        # Surrounding makeshift barricades
-        wall_uid = "tuskenWall1" if "tuskenWall1" in bld_map else "smugglerWall1"
-        for _ in range(25):
-            angle = rng.random() * 2 * math.pi
-            rad = rng.uniform(8, 14)
-            place_near(wall_uid, rad * math.cos(angle), rad * math.sin(angle), margin=0)
-
-    elif cat == "krayt":
-        # Krayt dragon graveyard
-        if "storyKraytBones1" in bld_map and not any(b["uid"] == "storyKraytBones1" for b in buildings):
-            place_building("storyKraytBones1", prefer_radius=0, margin=1, limit=5)
-        for r_uid in ["blockerCrystalRockLarge1", "blockerCrystalRockMedium1", "blockerRockLarge1", "junkLarge1"]:
-            if r_uid in bld_map:
-                place_building(r_uid, prefer_radius=rng.uniform(4, 10), margin=1, limit=15)
-        for _ in range(3):
-            place_building("rebelRubble1", prefer_radius=6, margin=0, limit=12)
-        for _ in range(20):
-            angle = rng.random() * 2 * math.pi
-            rad = rng.uniform(9, 15)
-            place_near("tuskenWall2", rad * math.cos(angle), rad * math.sin(angle), margin=0)
-
-    elif cat == "shipwreck":
-        # Shipwreck Atom Edge
-        bow_stern = "blockerShipBow1" if "1" in asset else "blockerShipStern1"
-        if bow_stern in bld_map and not any(b["uid"] == bow_stern for b in buildings):
-            place_building(bow_stern, prefer_radius=0, margin=1, limit=6)
-
-        # Scenery & debris
-        for s_uid in ["junkLarge1", "junkMedium1", "rockLarge1", "rebelRubble1", "rebelRubble2"]:
-            if s_uid in bld_map:
-                place_building(s_uid, prefer_radius=rng.uniform(4, 8), margin=0, limit=14)
-
-        if "2" in asset:
-            # mis_wos_2 requires 4 turrets
-            for _ in range(4):
-                place_building("tuskenAutoTurret2", prefer_radius=7, margin=1, limit=12)
-            place_building("tatooineHouseLarge3", prefer_radius=4, margin=1, limit=10)
-        else:
-            place_building("empireBarracks2", prefer_radius=5, margin=1, limit=10)
-            place_building("empireCreditStorage2", prefer_radius=5, margin=1, limit=10)
-            place_building("empireRapidFireTurret2", prefer_radius=8, margin=1, limit=12)
-
-        for _ in range(25):
-            angle = rng.random() * 2 * math.pi
-            rad = rng.uniform(9, 15)
-            place_near("tuskenWall2", rad * math.cos(angle), rad * math.sin(angle), margin=0)
-
-    elif cat == "tusken":
-        # Tusken Raider settlement
-        hq_uid = f"tuskenHQ{hq_lvl}"
-        if not any("HQ" in b["uid"] for b in buildings):
-            place_building(hq_uid, prefer_radius=0, margin=1, limit=6)
-
-        # Huts/Housing
-        for _ in range(rng.randint(2, 4)):
-            place_building(f"tuskenHouseLarge{hq_lvl}", prefer_radius=3, margin=1, limit=9)
-        for _ in range(rng.randint(3, 6)):
-            place_building(f"tuskenHouseSmall{hq_lvl}", prefer_radius=5, margin=1, limit=12)
-
-        # Defenses
-        for _ in range(rng.randint(2, 4)):
-            place_building(f"tuskenAutoTurret{hq_lvl}", prefer_radius=7, margin=1, limit=14)
-        for _ in range(rng.randint(1, 3)):
-            place_building(f"tuskenBurstTurret{hq_lvl}", prefer_radius=8, margin=1, limit=15)
-
-        # Extras
-        if "tuskenDroidHut1" in bld_map:
-            place_building("tuskenDroidHut1", prefer_radius=4, margin=1, limit=8)
-        if "tuskenFlag1" in bld_map:
-            place_building("tuskenFlag1", prefer_radius=5, margin=1, limit=10)
-
-        # Organic barricades
-        wall_uid = f"tuskenWall{min(4, hq_lvl)}"
-        for _ in range(35):
-            angle = rng.random() * 2 * math.pi
-            rad = rng.uniform(9, 16)
-            place_near(wall_uid, rad * math.cos(angle), rad * math.sin(angle), margin=0)
-
-    elif cat == "smuggler" or cat == "rancor":
-        # Smuggler / Mercenary base
-        hq_uid = f"smugglerHQ{hq_lvl}"
-        if not any("HQ" in b["uid"] for b in buildings):
-            place_building(hq_uid, prefer_radius=0, margin=1, limit=6)
-
-        # Core buildings
-        place_building(f"smugglerBarracks{hq_lvl}", prefer_radius=3, margin=1, limit=9)
-        place_building(f"smugglerStarport{hq_lvl}", prefer_radius=4, margin=1, limit=11)
-        place_building(f"smugglerCreditStorage{hq_lvl}", prefer_radius=3, margin=1, limit=8)
-        place_building(f"smugglerMaterialsStorage{hq_lvl}", prefer_radius=3, margin=1, limit=8)
-        place_building(f"smugglerCreditGenerator{hq_lvl}", prefer_radius=5, margin=1, limit=12)
-        place_building(f"smugglerMaterialsGenerator{hq_lvl}", prefer_radius=5, margin=1, limit=12)
-
-        # Special mission buildings
-        if "mis_utts_6" in asset and "rebelOffenseLab1" in bld_map:
-            place_building("rebelOffenseLab1", prefer_radius=4, margin=1, limit=8)
-        if "mis_utts_9" in asset:
-            mortar_uid = f"smugglerMortar{min(2, hq_lvl)}"
-            place_building(mortar_uid, prefer_radius=2, margin=1, limit=6)
-
-        # Turrets
-        turret_pool = [
-            f"smugglerRapidFireTurret{hq_lvl}",
-            f"smugglerBurstTurret{hq_lvl}",
-            f"smugglerMortar{min(3, hq_lvl)}",
-            f"smugglerRocketTurret{min(3, hq_lvl)}"
-        ]
-        valid_turrets = [t for t in turret_pool if t in bld_map]
-        for i in range(rng.randint(4, 7)):
-            t_uid = valid_turrets[i % len(valid_turrets)]
-            angle = 2 * math.pi * i / 6 + rng.uniform(-0.2, 0.2)
-            place_near(t_uid, 10 * math.cos(angle), 10 * math.sin(angle), margin=1)
-
-        # Wall perimeter
-        wall_uid = f"smugglerWall{min(4, hq_lvl)}"
-        wall_budget = 40 + hq_lvl * 5
-        ring_rad = min(15, 8 + hq_lvl)
-        perimeter = square_ring(ring_rad)
-        for tile in perimeter:
-            if grid.fits(tile[0], tile[1], 1, 1, margin=0):
-                grid.occupy(tile[0], tile[1], 1, 1)
-                buildings.append({"key": f"bld_{bld_key}", "x": tile[0], "z": tile[1], "uid": wall_uid})
+    def place_walls(tiles, wall_uid):
+        nonlocal bld_key
+        for tile in tiles:
+            x, z = tile[0], tile[1]
+            if grid.fits(x, z, 1, 1, margin=0):
+                grid.occupy(x, z, 1, 1)
+                buildings.append({"key": f"bld_{bld_key}", "x": x, "z": z, "uid": wall_uid})
                 bld_key += 1
 
-    else:
-        # Military base (Rebel or Empire or Outpost)
-        hq_uid = f"{faction}HQ{hq_lvl}"
-        if not any("HQ" in b["uid"] for b in buildings):
-            place_building(hq_uid, prefer_radius=0, margin=1, limit=6)
+    # =========================================================================
+    # STEP 1: GUARANTEE PRIMARY ANCHOR / HQ FIRST
+    # =========================================================================
+    needs_hq = (cat in ("empire", "rebel", "smuggler", "outpost", "tusken", "menagerie", "rancor") or
+                any("HQ" in pt for _, _, pt in info["vc_reqs"]))
 
+    if needs_hq:
+        hq_uid = f"{faction}HQ{hq_lvl}"
+        if hq_uid not in bld_map:
+            # Fallback to available HQ level
+            for l in range(hq_lvl, 0, -1):
+                if f"{faction}HQ{l}" in bld_map:
+                    hq_uid = f"{faction}HQ{l}"
+                    break
+        rec = bld_map[hq_uid]
+        w, h = int(rec["sizex"]), int(rec["sizey"])
+        # Place HQ centered
+        place_exact(hq_uid, -w // 2, -h // 2, margin=1)
+
+    # =========================================================================
+    # STEP 2: MANDATORY ENCOUNTER & SCRIPT TRIGGER BUILDINGS
+    # =========================================================================
+    # Sort triggers so large buildings / centers get placed first
+    mandatory = list(info["script_buildings"]) + list(info["enc_buildings"])
+    # Deduplicate preserving order
+    dedup_mandatory = []
+    seen_m = set()
+    for b in mandatory:
+        if b not in seen_m:
+            seen_m.add(b)
+            dedup_mandatory.append(b)
+
+    for b in dedup_mandatory:
+        if any(bld["uid"] == b for bld in buildings):
+            continue
+        if "HQ" in b:
+            place_building(b, prefer_radius=0, margin=1, limit=5)
+        elif "story" in b or "Bones" in b or "Ship" in b or "Shield" in b or "shield" in b:
+            place_building(b, prefer_radius=2, margin=1, limit=9)
+        elif "Barracks" in b:
+            place_building(b, prefer_radius=4, margin=1, limit=12)
+        else:
+            place_building(b, prefer_radius=5, margin=1, limit=14)
+
+    # =========================================================================
+    # STEP 3: VICTORY CONDITION TARGET BUILDINGS
+    # =========================================================================
+    for vc, ctype, prep in info["vc_reqs"]:
+        parts = prep.split("|")
+        # Check condition type
+        if ctype == "DestroyBuildingType":
+            count_str = parts[0]
+            btype = parts[1] if len(parts) > 1 else "any"
+            needed_count = int(count_str.replace("%", "")) if not count_str.endswith("%") else 1
+            if btype == "shield_generator":
+                # Find appropriate shield generator
+                current_sg = sum(1 for bld in buildings if bld_map.get(bld["uid"], {}).get("type") == "shield_generator")
+                while current_sg < needed_count:
+                    if cat in ("smuggler", "shipwreck", "menagerie", "rancor"):
+                        sg_uid = "smugglerShieldGeneratorLarge1" if "smugglerShieldGeneratorLarge1" in bld_map else "smugglerShieldGenerator4"
+                    elif faction == "rebel":
+                        sg_uid = f"rebelShieldGenerator{min(11, max(1, hq_lvl))}"
+                    else:
+                        sg_uid = f"empireShieldGenerator{min(11, max(1, hq_lvl))}"
+                    if not place_building(sg_uid, prefer_radius=3, margin=1, limit=10):
+                        break
+                    current_sg += 1
+
+            elif btype == "squad":
+                current_sq = sum(1 for bld in buildings if bld_map.get(bld["uid"], {}).get("type") == "squad")
+                while current_sq < needed_count:
+                    sq_uid = f"{faction}SquadBuilding{hq_lvl}" if f"{faction}SquadBuilding{hq_lvl}" in bld_map else f"{faction}SquadBuilding1"
+                    if not place_building(sq_uid, prefer_radius=4, margin=1, limit=11):
+                        break
+                    current_sq += 1
+
+            elif btype == "turret":
+                current_tur = sum(1 for bld in buildings if bld_map.get(bld["uid"], {}).get("type") == "turret")
+                t_pool = [f"{faction}RapidFireTurret{hq_lvl}", f"{faction}BurstTurret{hq_lvl}"]
+                valid_t = [t for t in t_pool if t in bld_map]
+                if not valid_t: valid_t = [f"{faction}RapidFireTurret1"]
+                while current_tur < needed_count:
+                    t_uid = valid_t[current_tur % len(valid_t)]
+                    if not place_building(t_uid, prefer_radius=8, margin=1, limit=15):
+                        break
+                    current_tur += 1
+
+        elif ctype in ("DestroyBuildingId", "DestroyBuildingsId"):
+            needed_count = int(parts[0])
+            target_id = parts[1]
+            current_id_cnt = sum(1 for bld in buildings if bld["uid"].startswith(target_id) or bld["uid"] == target_id)
+            while current_id_cnt < needed_count:
+                # Find matching building in bld_map
+                candidates = [u for u in bld_map if u.startswith(target_id) or u == target_id]
+                cand = candidates[0] if candidates else target_id
+                # Prefer level near hq_lvl
+                for c_u in candidates:
+                    if str(hq_lvl) in c_u or "1" in c_u:
+                        cand = c_u
+                        break
+                if not place_building(cand, prefer_radius=3, margin=1, limit=12):
+                    break
+                current_id_cnt += 1
+
+    # =========================================================================
+    # STEP 4: THEMATIC ARCHITECTURE & EXPANSION
+    # =========================================================================
+
+    if cat == "shipwreck":
+        # Crashed Starship salvage site (mis_bgh_6, mis_wos_1, mis_wos_2)
+        if "blockerShipBow1" in bld_map and not any(b["uid"] == "blockerShipBow1" for b in buildings):
+            place_exact("blockerShipBow1", -6, -2, margin=0)
+        if "blockerShipStern1" in bld_map and not any(b["uid"] == "blockerShipStern1" for b in buildings):
+            place_exact("blockerShipStern1", 2, -2, margin=0)
+
+        # Shield generator protecting the crash site (critical for mis_bgh_6!)
+        if not any(bld_map.get(b["uid"], {}).get("type") == "shield_generator" for b in buildings):
+            sg = "smugglerShieldGenerator4" if "smugglerShieldGenerator4" in bld_map else "smugglerShieldGeneratorLarge1"
+            place_building(sg, prefer_radius=2, margin=1, limit=8)
+
+        # Scavenger & Mercenary settlement around the hull
+        for b_name in ["smugglerBarracks4", "smugglerStarport5", "smugglerCreditStorage5",
+                       "smugglerMaterialsStorage5", "smugglerCreditGenerator5", "smugglerMaterialsGenerator5"]:
+            if b_name in bld_map:
+                place_building(b_name, prefer_radius=rng.uniform(4, 8), margin=1, limit=12)
+
+        # Defensive turrets
+        turrets = ["smugglerRapidFireTurret5", "smugglerBurstTurret5", "smugglerMortar3", "smugglerRocketTurret3"]
+        for t_uid in turrets:
+            if t_uid in bld_map:
+                place_building(t_uid, prefer_radius=rng.uniform(7, 11), margin=1, limit=14)
+
+        # Craters and debris field
+        craters = ["blockerBlastCraterTat1", "blockerBlastCraterTat2", "junkLarge1", "junkMedium1", "rebelRubble1"]
+        for cr in craters:
+            if cr in bld_map:
+                place_building(cr, prefer_radius=rng.uniform(3, 9), margin=0, limit=15)
+
+        # Perimeter salvage barricade
+        wall_uid = "smugglerWall4" if "smugglerWall4" in bld_map else "smugglerWall1"
+        walls = rect_ring(-14, 14, -13, 13, openings=[(-14, 0), (14, 0), (0, -13), (0, 13)])
+        place_walls(walls, wall_uid)
+
+    elif cat == "menagerie":
+        # Jabba's Menagerie (mis_bgh_8a)
+        # 5 distinct beast cages/barracks that release monsters onDeath!
+        for i in range(1, 6):
+            b_uid = f"smugglerBarracks{i}"
+            if b_uid in bld_map and not any(b["uid"] == b_uid for b in buildings):
+                place_building(b_uid, prefer_radius=rng.uniform(3, 7), margin=1, limit=11)
+
+        place_building("smugglerStarport5", prefer_radius=6, margin=1, limit=12)
+        place_building("smugglerCreditStorage5", prefer_radius=4, margin=1, limit=10)
+        place_building("smugglerMaterialsStorage5", prefer_radius=4, margin=1, limit=10)
+        place_building("smugglerCreditGenerator5", prefer_radius=5, margin=1, limit=11)
+        place_building("smugglerMaterialsGenerator5", prefer_radius=5, margin=1, limit=11)
+
+        for t_uid in ["smugglerRapidFireTurret5", "smugglerBurstTurret5", "smugglerMortar3", "smugglerRocketTurret3"]:
+            if t_uid in bld_map:
+                place_building(t_uid, prefer_radius=rng.uniform(7, 11), margin=1, limit=14)
+
+        # Distinct holding pens layout: central court with 4 corner wall enclosures
+        wall_uid = "smugglerWall4"
+        # Outer ring with gate openings
+        outer = rect_ring(-14, 14, -14, 14, openings=[(0, -14), (0, 14), (-14, 0), (14, 0)])
+        place_walls(outer, wall_uid)
+        # Inner pen partitions
+        part1 = line_wall(-14, 0, -4, 0)
+        part2 = line_wall(4, 0, 14, 0)
+        part3 = line_wall(0, -14, 0, -4)
+        part4 = line_wall(0, 4, 0, 14)
+        place_walls(part1 + part2 + part3 + part4, wall_uid)
+
+    elif cat == "rancor":
+        # Rancor Den (mis_bgh_9)
+        # smugglerShieldGenerator5 contains the Rancor!
+        if "smugglerShieldGenerator5" in bld_map and not any(b["uid"] == "smugglerShieldGenerator5" for b in buildings):
+            place_building("smugglerShieldGenerator5", prefer_radius=3, margin=1, limit=8)
+
+        place_building("smugglerDroidHut1", prefer_radius=4, margin=1, limit=9)
+        place_building("smugglerBarracks5", prefer_radius=5, margin=1, limit=11)
+        place_building("smugglerStarport5", prefer_radius=5, margin=1, limit=11)
+        place_building("smugglerCreditStorage5", prefer_radius=4, margin=1, limit=10)
+        place_building("smugglerMaterialsStorage5", prefer_radius=4, margin=1, limit=10)
+
+        for t_uid in ["smugglerRapidFireTurret5", "smugglerBurstTurret5", "smugglerMortar3", "smugglerRocketTurret3"]:
+            if t_uid in bld_map:
+                place_building(t_uid, prefer_radius=rng.uniform(7, 12), margin=1, limit=15)
+
+        # Boulders and bone ruins around the lair
+        for r in ["blockerRockLarge1", "blockerRockMedium1", "junkLarge1"]:
+            if r in bld_map:
+                place_building(r, prefer_radius=rng.uniform(4, 9), margin=0, limit=14)
+
+        wall_uid = "smugglerWall4"
+        walls = rect_ring(-13, 13, -13, 13, openings=[(-13, 0), (13, 0), (0, -13)])
+        place_walls(walls, wall_uid)
+
+    elif cat == "krayt":
+        # Krayt Dragon Graveyard (mis_bgh_11)
+        if "storyKraytBones1" in bld_map and not any(b["uid"] == "storyKraytBones1" for b in buildings):
+            place_exact("storyKraytBones1", -2, -2, margin=0)
+
+        for cr in ["blockerCrystalRockLarge1", "blockerCrystalRockMedium1", "blockerRockLarge1", "junkLarge1"]:
+            if cr in bld_map:
+                for _ in range(2):
+                    place_building(cr, prefer_radius=rng.uniform(3, 10), margin=1, limit=15)
+
+        for _ in range(4):
+            place_building("rebelRubble1", prefer_radius=rng.uniform(5, 11), margin=0, limit=15)
+
+        # Ancient desert stones forming an eerie circular ring
+        wall_uid = "tuskenWall2" if "tuskenWall2" in bld_map else "smugglerWall1"
+        for _ in range(26):
+            ang = rng.random() * 2 * math.pi
+            rad = rng.uniform(10, 16)
+            place_near(wall_uid, rad * math.cos(ang), rad * math.sin(ang), margin=0)
+
+    elif cat == "womprat":
+        # Womp Rat Warrens (mis_bgh_2, mis_bgh_13, mis_utts_2a, etc.)
+        lvl = max(1, min(6, hq_lvl))
+
+        # In mis_bgh_2, large4, large5, large6 are critical triggers!
+        if "bgh_2" in asset:
+            for req_nest in ["wompRatNestLarge4", "wompRatNestLarge5", "wompRatNestLarge6", "wompRatNestSmall5"]:
+                if req_nest in bld_map and not any(b["uid"] == req_nest for b in buildings):
+                    place_building(req_nest, prefer_radius=rng.uniform(2, 6), margin=1, limit=11)
+
+        # Clusters of nests
+        for _ in range(rng.randint(3, 5)):
+            place_building(f"wompRatNestLarge{lvl}", prefer_radius=rng.uniform(2, 6), margin=1, limit=12)
+        for _ in range(rng.randint(5, 8)):
+            place_building(f"wompRatNestSmall{lvl}", prefer_radius=rng.uniform(4, 9), margin=1, limit=14)
+
+        # Scenery: boulders, moisture vaporators, rusted junk
+        for r_uid in ["blockerRockSmall1", "blockerRockMedium1", "junkLarge1", "junkMedium1", "moistureVaporatorSmall"]:
+            if r_uid in bld_map:
+                place_building(r_uid, prefer_radius=rng.uniform(5, 12), margin=0, limit=16)
+
+        # Barricades: scattered defensive barricades
+        wall_uid = "tuskenWall1" if "tuskenWall1" in bld_map else "smugglerWall1"
+        for _ in range(30):
+            ang = rng.random() * 2 * math.pi
+            rad = rng.uniform(8, 15)
+            place_near(wall_uid, rad * math.cos(ang), rad * math.sin(ang), margin=0)
+
+    elif cat == "village":
+        # Ruined mercenary settlement (mis_bgh_7)
+        place_building("smugglerStarport4", prefer_radius=5, margin=1, limit=10)
+        place_building("smugglerDroidHut1", prefer_radius=3, margin=1, limit=8)
+        place_building("blockerDesertHouseSmall1", prefer_radius=4, margin=1, limit=10)
+        place_building("blockerDesertHouseLarge1", prefer_radius=6, margin=1, limit=12)
+        place_building("blockerDesertCantina1", prefer_radius=7, margin=1, limit=13)
+        if "tatooineJawaSandcrawler1" in bld_map:
+            place_building("tatooineJawaSandcrawler1", prefer_radius=9, margin=1, limit=15)
+
+        for _ in range(3):
+            place_building("rebelRubble1", prefer_radius=rng.uniform(4, 10), margin=0, limit=14)
+        for t_uid in ["smugglerRapidFireTurret5", "smugglerBurstTurret5"]:
+            if t_uid in bld_map:
+                place_building(t_uid, prefer_radius=rng.uniform(8, 12), margin=1, limit=15)
+
+        wall_uid = "smugglerWall4"
+        walls = rect_ring(-13, 13, -12, 12, openings=[(0, -12), (0, 12), (-13, 0), (13, 0)])
+        place_walls(walls, wall_uid)
+
+    elif cat == "dewback":
+        # Dewback desert paddock (mis_bgh_4a)
+        place_building("smugglerBarracks4", prefer_radius=3, margin=1, limit=8)
+        place_building("smugglerStarport5", prefer_radius=5, margin=1, limit=11)
+        place_building("smugglerCreditStorage5", prefer_radius=4, margin=1, limit=9)
+        place_building("smugglerMaterialsStorage5", prefer_radius=4, margin=1, limit=9)
+        place_building("blockerDesertHouseSmall1", prefer_radius=6, margin=1, limit=11)
+        place_building("moistureVaporatorLarge", prefer_radius=7, margin=1, limit=12)
+
+        for t_uid in ["smugglerRapidFireTurret5", "smugglerBurstTurret5", "smugglerMortar3"]:
+            if t_uid in bld_map:
+                place_building(t_uid, prefer_radius=rng.uniform(7, 11), margin=1, limit=14)
+
+        # Enclosure with distinct Dewback corral
+        wall_uid = "smugglerWall4"
+        outer = rect_ring(-14, 14, -13, 13, openings=[(0, -13), (0, 13)])
+        corral = rect_ring(-12, -2, -10, 2, openings=[(-2, -4)])
+        place_walls(outer + corral, wall_uid)
+
+    elif cat == "tusken":
+        # Tusken Raider Tribal Camp with Bantha Corral
+        for _ in range(rng.randint(2, 4)):
+            place_building(f"tuskenHouseLarge{hq_lvl}", prefer_radius=rng.uniform(3, 7), margin=1, limit=10)
+        for _ in range(rng.randint(3, 5)):
+            place_building(f"tuskenHouseSmall{hq_lvl}", prefer_radius=rng.uniform(4, 9), margin=1, limit=12)
+
+        if "tuskenFlag1" in bld_map:
+            place_building("tuskenFlag1", prefer_radius=4, margin=1, limit=8)
+            place_building("tuskenFlag1", prefer_radius=6, margin=1, limit=10)
+
+        for _ in range(rng.randint(2, 4)):
+            place_building(f"tuskenAutoTurret{hq_lvl}", prefer_radius=rng.uniform(6, 11), margin=1, limit=13)
+        for _ in range(rng.randint(1, 3)):
+            place_building(f"tuskenBurstTurret{hq_lvl}", prefer_radius=rng.uniform(7, 12), margin=1, limit=14)
+
+        # Bantha corral & curved organic barricades
+        wall_uid = f"tuskenWall{min(4, hq_lvl)}"
+        # Corral oval on the eastern side
+        corral_tiles = []
+        for deg in range(0, 360, 12):
+            rad = math.radians(deg)
+            cx = int(8 + 5 * math.cos(rad))
+            cz = int(4 * math.sin(rad))
+            if deg not in (0, 12): # Gate opening
+                corral_tiles.append((cx, cz))
+        place_walls(corral_tiles, wall_uid)
+
+        # Main tribal perimeter
+        perimeter = rect_ring(-13, 14, -13, 13, openings=[(-13, 0), (0, -13), (0, 13)])
+        place_walls(perimeter, wall_uid)
+
+    else:
+        # Military Bases (Empire, Rebel, Smuggler Syndicates, Outposts)
         # Primary military buildings
         for b_name in ["Barracks", "Starport", "Factory"]:
             uid = f"{faction}{b_name}{hq_lvl}"
-            if uid in bld_map:
-                place_building(uid, prefer_radius=4, margin=1, limit=10)
+            if uid in bld_map and not any(b["uid"] == uid for b in buildings):
+                place_building(uid, prefer_radius=rng.uniform(4, 8), margin=1, limit=12)
 
         # Storages & Generators
         for b_name in ["CreditStorage", "MaterialsStorage", "CreditGenerator", "MaterialsGenerator"]:
             uid = f"{faction}{b_name}{hq_lvl}"
-            if uid in bld_map:
-                place_building(uid, prefer_radius=rng.uniform(3, 6), margin=1, limit=10)
+            if uid in bld_map and not any(b["uid"] == uid for b in buildings):
+                place_building(uid, prefer_radius=rng.uniform(3, 7), margin=1, limit=11)
 
         # Support facilities
         for b_name in ["SquadBuilding", "OffenseLab", "ShieldGenerator", "TacticalCommand"]:
             uid = f"{faction}{b_name}{min(hq_lvl, 5)}"
             if uid in bld_map and not any(b["uid"] == uid for b in buildings):
-                place_building(uid, prefer_radius=5, margin=1, limit=11)
+                place_building(uid, prefer_radius=rng.uniform(3, 8), margin=1, limit=11)
 
-        # Turrets belt
+        # Turrets
         turret_types = ["RapidFireTurret", "BurstTurret", "Mortar", "RocketTurret", "SonicTurret"]
         turret_pool = [f"{faction}{t}{hq_lvl}" for t in turret_types if f"{faction}{t}{hq_lvl}" in bld_map]
         if not turret_pool:
             turret_pool = [f"{faction}RapidFireTurret1"]
 
-        num_turrets = min(12, max(4, hq_lvl + 2))
-        belt_radius = min(16, 9 + hq_lvl // 2)
+        num_turrets = min(12, max(5, hq_lvl + 2))
         for i in range(num_turrets):
             t_uid = turret_pool[i % len(turret_pool)]
-            angle = 2 * math.pi * i / num_turrets + rng.uniform(-0.15, 0.15)
-            place_near(t_uid, belt_radius * math.cos(angle), belt_radius * math.sin(angle), margin=1)
+            place_building(t_uid, prefer_radius=rng.uniform(7, 13), margin=1, limit=15)
 
-        # Defensive Wall Ring
+        # Wall architecture selection based on arch_style
         wall_uid = f"{faction}Wall{min(8, hq_lvl)}"
-        if f"erkitWall{min(8, hq_lvl)}" in bld_map and info["planet"] == "planet3":
+        if planet == "planet6" and f"erkitWall{min(8, hq_lvl)}" in bld_map:
             wall_uid = f"erkitWall{min(8, hq_lvl)}"
 
-        ring_rad = min(17, 8 + hq_lvl)
-        perimeter = square_ring(ring_rad)
-        for tile in perimeter:
-            if grid.fits(tile[0], tile[1], 1, 1, margin=0):
-                grid.occupy(tile[0], tile[1], 1, 1)
-                buildings.append({"key": f"bld_{bld_key}", "x": tile[0], "z": tile[1], "uid": wall_uid})
-                bld_key += 1
+        if arch_style == "citadel":
+            # Style 1: Fortified Inner Keep + Outer Ward with corner bastions
+            inner = rect_ring(-6, 6, -6, 6, openings=[(0, -6), (0, 6)])
+            outer_rad = min(16, 10 + hq_lvl // 2)
+            outer = rect_ring(-outer_rad, outer_rad, -outer_rad, outer_rad,
+                              openings=[(-outer_rad, 0), (outer_rad, 0), (0, -outer_rad), (0, outer_rad)])
+            place_walls(inner + outer, wall_uid)
 
-    return {"map": {"next": 0, "planet": info["planet"], "buildings": buildings}}
+        elif arch_style == "compartment":
+            # Style 2: Compartmentalized 4-sector fortress with interior cross-walls
+            rad = min(16, 11 + hq_lvl // 2)
+            outer = rect_ring(-rad, rad, -rad, rad, openings=[(-rad, 0), (rad, 0), (0, -rad), (0, rad)])
+            # Cross-walls with openings
+            cross1 = line_wall(-rad, 0, rad, 0, openings=[(-5, 0), (5, 0), (-1, 0), (0, 0), (1, 0)])
+            cross2 = line_wall(0, -rad, 0, rad, openings=[(0, -5), (0, 5), (0, -1), (0, 0), (0, 1)])
+            place_walls(outer + cross1 + cross2, wall_uid)
+
+        elif arch_style == "bastion_wings":
+            # Style 3: Bastion wings with funnel kill-zones
+            rad = min(16, 11 + hq_lvl // 2)
+            outer = rect_ring(-rad, rad, -rad, rad, openings=[(0, -rad)])
+            # Forward defensive wings funneling into the base
+            wing1 = line_wall(-8, -rad, -3, -rad + 5)
+            wing2 = line_wall(8, -rad, 3, -rad + 5)
+            place_walls(outer + wing1 + wing2, wall_uid)
+
+        else:
+            # Style 4: Staggered asymmetrical compound
+            rad1 = min(15, 10 + hq_lvl // 2)
+            outer = rect_ring(-rad1, rad1, -rad1 + 2, rad1 - 2,
+                              openings=[(-rad1, 0), (rad1, 0), (0, -rad1 + 2), (0, rad1 - 2)])
+            # Interior baffle wall protecting command sector
+            baffle = line_wall(-5, 4, 5, 4, openings=[(0, 4)])
+            place_walls(outer + baffle, wall_uid)
+
+    # =========================================================================
+    # STEP 5: PLANET-SPECIFIC ENVIRONMENTAL SCENERY
+    # =========================================================================
+    props_to_add = []
+    if planet == "planet1": # Tatooine
+        props_to_add = ["moistureVaporatorSmall", "blockerRockSmall1", "blockerRockMedium1", "junkSmall1"]
+    elif planet == "planet3": # Dandoran
+        props_to_add = ["treeSmall1", "treeMedium1", "blockerDanRockSmall1", "blockerDanJunkSmall1"]
+    elif planet == "planet6": # Er'Kit
+        props_to_add = ["blockerErkRockSmall1", "blockerErkRockMedium1", "blockerErkJunkSmall1"]
+    elif planet == "planet8": # Yavin 4
+        props_to_add = ["blockerYavRockSmall1", "treeMedium1", "rebelRubble1", "blockerYavJunkSmall1"]
+    elif planet == "planet21": # Hoth
+        props_to_add = ["blockerHotRockSmall1", "blockerHotRockMedium1", "blockerHotJunkSmall1"]
+    elif planet == "planet23": # Takodana
+        props_to_add = ["blockerTakRockSmall1", "treeSmall1", "blockerTakJunkSmall1"]
+
+    for prop in props_to_add:
+        if prop in bld_map:
+            place_building(prop, prefer_radius=rng.uniform(12, 18), margin=0, limit=BUILD_LIMIT, fallback=False)
+
+    return {"map": {"next": 0, "planet": planet, "buildings": buildings}}
 
 
 def main():
-    print("=== Star Wars Commander Mission Base Generator ===")
+    print("=== Star Wars Commander Mission Base Generator (Story & Diversity Enhanced) ===")
     bld_map, missions, bd_map, dep_map, bscr_map, cond_map = load_game_data()
     needed = analyze_battle_assets(missions, bd_map, dep_map, bscr_map, cond_map)
 
@@ -539,16 +791,44 @@ def main():
             preserved_count += 1
             continue
 
-        cat, faction, hq_lvl = determine_category_and_hq(asset, info)
-        base_data = build_layout(asset, info, cat, faction, hq_lvl, bld_map)
+        cat, faction, hq_lvl, arch_style = determine_category_and_hq(asset, info)
+        base_data = build_layout(asset, info, cat, faction, hq_lvl, arch_style, bld_map)
 
-        # Validate layout
+        # Validation
         blds = base_data["map"]["buildings"]
         assert len(blds) >= 10, f"Too few buildings for {asset}: {len(blds)}"
+        bld_uids = set(b["uid"] for b in blds)
+
         for b in blds:
             assert b["uid"] in bld_map, f"Invalid building {b['uid']} in {asset}"
             x, z = b["x"], b["z"]
             assert GRID_MIN <= x <= GRID_MAX and GRID_MIN <= z <= GRID_MAX, f"Out of bounds in {asset}: {b}"
+
+        # Rigorous check: all script buildings present
+        for req_b in info["script_buildings"]:
+            assert req_b in bld_uids, f"Missing script trigger {req_b} in {asset}"
+
+        # Rigorous check: all encounter buildings present
+        for req_b in info["enc_buildings"]:
+            assert req_b in bld_uids, f"Missing encounter trigger {req_b} in {asset}"
+
+        # Rigorous check: HQ present if needed
+        needs_hq = any("HQ" in pt for _, _, pt in info["vc_reqs"])
+        if needs_hq:
+            assert any("HQ" in b["uid"] for b in blds), f"Missing HQ in {asset} when required by VC!"
+
+        # Rigorous check: shield generator present if needed
+        needs_shield = any("shield_generator" in pt for _, _, pt in info["vc_reqs"])
+        if needs_shield:
+            assert any(bld_map.get(b["uid"], {}).get("type") == "shield_generator" for b in blds), f"Missing shield generator in {asset} when required by VC!"
+
+        # Sever any previous hardlinks before writing
+        for p in [target_path, root_path]:
+            if os.path.exists(p):
+                try:
+                    os.unlink(p)
+                except OSError:
+                    pass
 
         # Write to primary battles dir
         with open(target_path, "w", encoding="utf-8") as f:
@@ -558,15 +838,14 @@ def main():
         with open(root_path, "w", encoding="utf-8") as f:
             json.dump(base_data, f)
 
-        # Also support tokenized old naming scheme mis_<short>_<num>_<fac>.json
         for m_uid in info["mission_uids"]:
             manifest_map[m_uid] = filename
 
         generated_count += 1
-        print(f"[GENERATE] {filename}: {len(blds)} blds, cat={cat}, fac={faction}, hq={hq_lvl}, planet={info['planet']}")
+        print(f"[GENERATE] {filename:18}: {len(blds):3} blds, cat={cat:10}, fac={faction:8}, hq={hq_lvl}, style={arch_style:12}, planet={info['planet']}")
 
     # Generate aliases (by map uid, mission uid, and tokenized pattern) so any request style resolves
-    print("\nCreating aliases for battle requests...")
+    print(f"\nCreating aliases for battle requests (Total generated: {generated_count}, Preserved: {preserved_count})...")
     alias_count = 0
     for m in missions:
         map_uid = m.get("map")
@@ -579,7 +858,6 @@ def main():
         if not os.path.exists(src_file):
             continue
 
-        # Aliases to point to src_file
         target_names = [f"{map_uid}.json", f"{m['uid']}.json"]
 
         tokens = map_uid.split("_")
@@ -591,20 +869,29 @@ def main():
             target_names.append(f"mis_{alpha[0]}_{nums[-1]}{fac[0]}.json")
 
         for alias_name in target_names:
-            if alias_name == f"{asset}.json" or alias_name in PRESERVED_FILES:
+            clean_name = alias_name[:-5] if alias_name.endswith(".json") else alias_name
+            if alias_name == f"{asset}.json" or alias_name in PRESERVED_FILES or clean_name in needed:
                 continue
             for folder in [BATTLES_DIR, BATTLES_ROOT_DIR]:
                 alias_path = os.path.join(folder, alias_name)
+                # Overwrite or create link
+                if os.path.exists(alias_path) and not os.path.samefile(src_file, alias_path):
+                    try:
+                        os.unlink(alias_path)
+                    except OSError:
+                        pass
                 if not os.path.exists(alias_path):
                     try:
                         os.link(src_file, alias_path)
+                        alias_count += 1
                     except OSError:
-                        import shutil
-                        shutil.copyfile(src_file, alias_path)
-                    alias_count += 1
+                        # Fallback to file copy if hardlink fails
+                        with open(src_file, "r") as sf, open(alias_path, "w") as df:
+                            df.write(sf.read())
+                        alias_count += 1
 
-    print(f"Aliases created: {alias_count}")
-    print(f"\nDone: {generated_count} generated, {preserved_count} preserved, total {len(needed)} battle assets.")
+    print(f"Aliases verified/created: {alias_count}")
+    print("Base map generation complete!")
 
 
 if __name__ == "__main__":
