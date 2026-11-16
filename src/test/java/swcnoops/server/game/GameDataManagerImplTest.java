@@ -3,6 +3,7 @@ package swcnoops.server.game;
 import org.junit.Test;
 import swcnoops.server.Config;
 import swcnoops.server.ServiceFactory;
+import swcnoops.server.commands.guild.GuildWarAttackBaseStart;
 import swcnoops.server.model.FactionType;
 import swcnoops.server.model.ObjectiveGroup;
 import swcnoops.server.model.UnlockedPlanets;
@@ -56,8 +57,18 @@ public class GameDataManagerImplTest {
         assertFalse(patchData.getMap(CommandCenterEntryData.class).isEmpty());
         assertFalse(patchData.getMap(TransmissionData.class).isEmpty());
         assertFalse(patchData.getMap(PerkData.class).isEmpty());
+        assertFalse(patchData.getMap(PerkEffectData.class).isEmpty());
         assertFalse(patchData.getMap(EpisodeData.class).isEmpty());
+        assertFalse(patchData.getMap(EpisodeTaskActionData.class).isEmpty());
         assertFalse(patchData.getMap(WarBuffData.class).isEmpty());
+
+        assertEquals(900, CurrencyHelper.applyContractDiscount(1000, 0.10));
+        ServiceFactory.instance().getGameDataManager().getPatchData();
+        ServiceFactory.instance().getGameDataManager().initOnStartup();
+        assertEquals("sw_tat_outpost_e_2",
+                GuildWarAttackBaseStart.resolveBuffBaseBattleUid("warBuff1", 2, FactionType.empire));
+        assertEquals("sw_tat_outpost_r_2",
+                GuildWarAttackBaseStart.resolveBuffBaseBattleUid("warBuff1", 2, FactionType.rebel));
 
         // Verify live planetary conflicts and daily objectives are active
         assertNotNull(gameDataManager.getConflictManager().getConflict("planet1"));

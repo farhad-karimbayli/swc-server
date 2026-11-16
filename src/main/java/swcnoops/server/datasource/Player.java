@@ -18,6 +18,7 @@ public class Player {
     private PvpAttack currentPvPAttack;
     private PvpAttack currentPvPDefence;
     private long loginTime;
+    private String authToken;
 
     private Map<String, Long> receivedDonations = new HashMap<>();
 
@@ -94,5 +95,13 @@ public class Player {
 
     public Map<String, Long> getReceivedDonations() {
         return receivedDonations;
+    }
+
+    public String getAuthToken() {
+        return authToken;
+    }
+
+    public void setAuthToken(String authToken) {
+        this.authToken = authToken;
     }
 }

@@ -103,12 +103,16 @@ public class JoeFile {
         private List<LimitedEditionItemData> limitedEditionItemData;
         @JsonProperty("Perks")
         private List<PerkData> perks;
+        @JsonProperty("PerkEffects")
+        private List<PerkEffectData> perkEffects;
         @JsonProperty("SquadLevel")
         private List<SquadLevelData> squadLevel;
         @JsonProperty("EpisodeData")
         private List<EpisodeData> episodeData;
         @JsonProperty("EpisodeTask")
         private List<EpisodeTaskData> episodeTask;
+        @JsonProperty("EpisodeTaskAction")
+        private List<EpisodeTaskActionData> episodeTaskAction;
         @JsonProperty("WarBuffData")
         private List<WarBuffData> warBuffData;
 
@@ -200,12 +204,16 @@ public class JoeFile {
         public void setLimitedEditionItemData(List<LimitedEditionItemData> limitedEditionItemData) { this.limitedEditionItemData = limitedEditionItemData; }
         public List<PerkData> getPerks() { return perks; }
         public void setPerks(List<PerkData> perks) { this.perks = perks; }
+        public List<PerkEffectData> getPerkEffects() { return perkEffects; }
+        public void setPerkEffects(List<PerkEffectData> perkEffects) { this.perkEffects = perkEffects; }
         public List<SquadLevelData> getSquadLevel() { return squadLevel; }
         public void setSquadLevel(List<SquadLevelData> squadLevel) { this.squadLevel = squadLevel; }
         public List<EpisodeData> getEpisodeData() { return episodeData; }
         public void setEpisodeData(List<EpisodeData> episodeData) { this.episodeData = episodeData; }
         public List<EpisodeTaskData> getEpisodeTask() { return episodeTask; }
         public void setEpisodeTask(List<EpisodeTaskData> episodeTask) { this.episodeTask = episodeTask; }
+        public List<EpisodeTaskActionData> getEpisodeTaskAction() { return episodeTaskAction; }
+        public void setEpisodeTaskAction(List<EpisodeTaskActionData> episodeTaskAction) { this.episodeTaskAction = episodeTaskAction; }
         public List<WarBuffData> getWarBuffData() { return warBuffData; }
         public void setWarBuffData(List<WarBuffData> warBuffData) { this.warBuffData = warBuffData; }
     }

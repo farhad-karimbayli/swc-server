@@ -59,7 +59,11 @@ public class TrainingManagerImpl implements TrainingManager {
         TroopData troopData = ServiceFactory.instance().getGameDataManager().getTroopDataByUid(unitTypeId);
         Builder builder = getBuilder(buildingId);
         CurrencyType trainingCurrency = getTrainingCurrency(troopData);
-        int trainCost = getTrainCost(trainingCurrency, troopData);
+        int baseTrainCost = getTrainCost(trainingCurrency, troopData);
+        double perkDiscount = builder != null
+                ? CurrencyHelper.getActiveContractDiscount(this.playerSession, builder.getBuildingData(), startTime)
+                : 0.0;
+        int trainCost = CurrencyHelper.applyContractDiscount(baseTrainCost, perkDiscount);
         int givenTrainCost = calculateGivenTrainingCost(this.playerSession, credits, contraband, trainingCurrency);
         List<BuildUnit> buildUnits = new ArrayList<>(quantity);
         for (int i = 0; i < quantity; i++) {

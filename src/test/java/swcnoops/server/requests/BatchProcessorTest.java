@@ -74,7 +74,17 @@ public class BatchProcessorTest {
                 + "{\"action\":\"player.store.tournament.buy\",\"args\":{},\"requestId\":14,\"time\":0,\"token\":\"t14\"},"
                 + "{\"action\":\"player.award.rateMyApp\",\"args\":{},\"requestId\":15,\"time\":0,\"token\":\"t15\"},"
                 + "{\"action\":\"guild.war.claim\",\"args\":{},\"requestId\":16,\"time\":0,\"token\":\"t16\"},"
-                + "{\"action\":\"guild.invite.accept\",\"args\":{},\"requestId\":17,\"time\":0,\"token\":\"t17\"}"
+                + "{\"action\":\"guild.invite.accept\",\"args\":{},\"requestId\":17,\"time\":0,\"token\":\"t17\"},"
+                + "{\"action\":\"guild.invite.sent\",\"args\":{},\"requestId\":18,\"time\":0,\"token\":\"t18\"},"
+                + "{\"action\":\"guild.setLeader\",\"args\":{},\"requestId\":19,\"time\":0,\"token\":\"t19\"},"
+                + "{\"action\":\"player.get\",\"args\":{},\"requestId\":20,\"time\":0,\"token\":\"t20\"},"
+                + "{\"action\":\"player.getSyncContent\",\"args\":{},\"requestId\":21,\"time\":0,\"token\":\"t21\"},"
+                + "{\"action\":\"player.state.reset\",\"args\":{},\"requestId\":22,\"time\":0,\"token\":\"t22\"},"
+                + "{\"action\":\"player.content.reset\",\"args\":{},\"requestId\":23,\"time\":0,\"token\":\"t23\"},"
+                + "{\"action\":\"player.error\",\"args\":{},\"requestId\":24,\"time\":0,\"token\":\"t24\"},"
+                + "{\"action\":\"player.inventory.transfer\",\"args\":{},\"requestId\":25,\"time\":0,\"token\":\"t25\"},"
+                + "{\"action\":\"player.account.external.unregister\",\"args\":{},\"requestId\":26,\"time\":0,\"token\":\"t26\"},"
+                + "{\"action\":\"player.money.receipt.verify\",\"args\":{},\"requestId\":27,\"time\":0,\"token\":\"t27\"}"
                 + "]}";
         Batch decodedNew = batchProcessor.decode(newCommandsBatch);
         batchProcessor.decodeCommands(decodedNew);

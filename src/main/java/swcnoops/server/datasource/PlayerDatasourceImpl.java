@@ -2126,4 +2126,22 @@ public class PlayerDatasourceImpl implements PlayerDataSource {
         }
         return stats;
     }
+
+    @Override
+    public void saveAuthToken(String playerId, String authToken) {
+        if (this.playerCollection == null || playerId == null || authToken == null) {
+            return;
+        }
+        this.playerCollection.updateOne(eq("_id", playerId), set("authToken", authToken));
+    }
+
+    @Override
+    public String getAuthToken(String playerId) {
+        if (this.playerCollection == null || playerId == null) {
+            return null;
+        }
+        Player p = this.playerCollection.find(eq("_id", playerId))
+                .projection(include("authToken")).first();
+        return p != null ? p.getAuthToken() : null;
+    }
 }

@@ -30,9 +30,11 @@ public class PatchData {
         merge((List<JoeData>)(List<?>)joeObjects.getTransmissions());
         merge((List<JoeData>)(List<?>)joeObjects.getLimitedEditionItemData());
         merge((List<JoeData>)(List<?>)joeObjects.getPerks());
+        merge((List<JoeData>)(List<?>)joeObjects.getPerkEffects());
         merge((List<JoeData>)(List<?>)joeObjects.getSquadLevel());
         merge((List<JoeData>)(List<?>)joeObjects.getEpisodeData());
         merge((List<JoeData>)(List<?>)joeObjects.getEpisodeTask());
+        merge((List<JoeData>)(List<?>)joeObjects.getEpisodeTaskAction());
         merge((List<JoeData>)(List<?>)joeObjects.getWarBuffData());
     }
 

@@ -239,6 +239,7 @@ public class PlayerSessionImpl implements PlayerSession {
         CurrencyDelta currencyDelta =
                 this.trainingManager.trainTroops(buildingId, unitTypeId, quantity, credits, contraband, startTime);
         this.processInventoryStorage(currencyDelta);
+        advanceEpisodeTaskForTraining(unitTypeId, quantity);
         savePlayerSession();
     }
 
@@ -749,9 +750,7 @@ public class PlayerSessionImpl implements PlayerSession {
     @Override
     public void pveBattleComplete(String battleId, int stars, Map<String, Integer> attackingUnitsKilled, long time) {
         processBattleComplete(attackingUnitsKilled, time);
-        if (stars > 0) {
-            advanceEpisodeTask();
-        }
+        advanceEpisodeTaskForBattle(null, stars);
         PlayerCampaignMission playerCampaignMission = this.getPlayerSettings().getPlayerCampaignMission();
         playerCampaignMission.battleComplete(battleId, stars);
         this.savePlayerSession();
@@ -762,24 +761,200 @@ public class PlayerSessionImpl implements PlayerSession {
                                   PvpMatch pvpMatch, long time)
     {
         processPvpBattleComplete(battleReplay, time);
-        if (battleReplay != null && battleReplay.battleLog != null && battleReplay.battleLog.stars > 0) {
-            advanceEpisodeTask();
-        }
+        int stars = battleReplay != null && battleReplay.battleLog != null ? battleReplay.battleLog.stars : 0;
+        advanceEpisodeTaskForBattle(battleReplay, stars);
         calculateResourcesGained(battleReplay, pvpMatch);
         updatePlayerAfterPvPBattle(battleReplay, pvpMatch);
         updateDefenderAfterPvPBattle(battleReplay, pvpMatch);
         ServiceFactory.instance().getPlayerDatasource().savePvPBattleComplete(this, pvpMatch, battleReplay);
     }
 
-    private void advanceEpisodeTask() {
+    private void advanceEpisodeTaskForTraining(String unitTypeId, int quantity) {
+        if (unitTypeId == null || quantity <= 0) {
+            return;
+        }
+        EpisodeTaskActionData action = getCurrentEpisodeAction();
+        if (action == null || action.getType() == null || action.getItem() == null) {
+            return;
+        }
+        GameDataManager gameDataManager = ServiceFactory.instance().getGameDataManager();
+        TroopData troopData = gameDataManager != null ? gameDataManager.getTroopDataByUid(unitTypeId) : null;
+        if (troopData == null) {
+            return;
+        }
+        if ("TrainTroopID".equals(action.getType()) && !troopData.isSpecialAttack()
+                && action.getItem().equalsIgnoreCase(troopData.getUnitId())) {
+            incrementEpisodeTask(quantity);
+        } else if ("TrainSpecialAttackID".equals(action.getType()) && troopData.isSpecialAttack()
+                && action.getItem().equalsIgnoreCase(troopData.getSpecialAttackID())) {
+            incrementEpisodeTask(quantity);
+        }
+    }
+
+    private void advanceEpisodeTaskForBattle(BattleReplay battleReplay, int stars) {
         EpisodeProgressInfo info = this.getPlayerSettings().getEpisodeProgressInfo();
-        if (info != null && info.currentTask != null && !info.currentTask.completed) {
-            info.currentTask.count += 1;
-            if (info.currentTask.count >= Math.max(1, info.currentTask.target)) {
-                info.currentTask.count = Math.max(1, info.currentTask.target);
+        if (info == null || info.currentTask == null || info.currentTask.completed) {
+            return;
+        }
+        EpisodeTaskActionData action = getCurrentEpisodeAction();
+        if (action == null || action.getType() == null) {
+            if (stars > 0) {
+                incrementEpisodeTask(1);
+            }
+            return;
+        }
+        String type = action.getType();
+        switch (type) {
+            case "TrainTroopID":
+            case "TrainSpecialAttackID":
+                return;
+            case "EpisodePoint":
+                if (stars > 0) {
+                    incrementEpisodeTask(stars);
+                }
+                return;
+            case "Loot":
+                if (battleReplay != null && battleReplay.battleLog != null && battleReplay.battleLog.looted != null) {
+                    int gained = getLootedByItem(battleReplay.battleLog.looted, action.getItem());
+                    if (gained > 0) {
+                        incrementEpisodeTask(gained);
+                    }
+                }
+                return;
+            case "DeployTroopType":
+            case "DeploySpecialAttackID":
+                int deployed = countMatchingDeployments(battleReplay, action);
+                if (deployed > 0) {
+                    incrementEpisodeTask(deployed);
+                }
+                return;
+            case "DestroyBuilding":
+            case "DestroyBuildingID":
+            case "DestroyBuildingType":
+                int destroyed = countMatchingDestroyedBuildings(battleReplay, action, stars);
+                if (destroyed > 0) {
+                    incrementEpisodeTask(destroyed);
+                }
+                return;
+            default:
+                if (stars > 0) {
+                    incrementEpisodeTask(1);
+                }
+        }
+    }
+
+    private EpisodeTaskActionData getCurrentEpisodeAction() {
+        EpisodeProgressInfo info = this.getPlayerSettings().getEpisodeProgressInfo();
+        if (info == null || info.currentTask == null || info.currentTask.completed
+                || info.currentTask.actionUID == null) {
+            return null;
+        }
+        GameDataManager gameDataManager = ServiceFactory.instance().getGameDataManager();
+        PatchData patchData = gameDataManager != null ? gameDataManager.getPatchData() : null;
+        Map<String, EpisodeTaskActionData> actionMap = patchData != null ? patchData.getMap(EpisodeTaskActionData.class) : null;
+        return actionMap != null ? actionMap.get(info.currentTask.actionUID) : null;
+    }
+
+    private void incrementEpisodeTask(int delta) {
+        EpisodeProgressInfo info = this.getPlayerSettings().getEpisodeProgressInfo();
+        if (info != null && info.currentTask != null && !info.currentTask.completed && delta > 0) {
+            int target = Math.max(1, info.currentTask.target);
+            info.currentTask.count += delta;
+            if (info.currentTask.count >= target) {
+                info.currentTask.count = target;
                 info.currentTask.completed = true;
             }
         }
+    }
+
+    private int getLootedByItem(Earned looted, String item) {
+        if (item == null || looted == null) {
+            return 0;
+        }
+        switch (item) {
+            case "credits":
+                return Math.max(0, looted.credits);
+            case "materials":
+                return Math.max(0, looted.materials);
+            case "contraband":
+                return Math.max(0, looted.contraband);
+            default:
+                return 0;
+        }
+    }
+
+    private int countMatchingDeployments(BattleReplay battleReplay, EpisodeTaskActionData action) {
+        if (battleReplay == null || battleReplay.battleLog == null || battleReplay.battleLog.troopsExpended == null
+                || action.getItem() == null) {
+            return 0;
+        }
+        GameDataManager gameDataManager = ServiceFactory.instance().getGameDataManager();
+        if (gameDataManager == null) {
+            return 0;
+        }
+        int total = 0;
+        boolean specialAttack = "DeploySpecialAttackID".equals(action.getType());
+        for (Map.Entry<String, Integer> entry : battleReplay.battleLog.troopsExpended.entrySet()) {
+            TroopData troop = gameDataManager.getTroopDataByUid(entry.getKey());
+            if (troop == null || entry.getValue() == null || entry.getValue() <= 0) {
+                continue;
+            }
+            if (specialAttack) {
+                if (troop.isSpecialAttack() && action.getItem().equalsIgnoreCase(troop.getSpecialAttackID())) {
+                    total += entry.getValue();
+                }
+            } else if (!troop.isSpecialAttack() && troop.getType() != null
+                    && action.getItem().equalsIgnoreCase(troop.getType().name())) {
+                total += entry.getValue();
+            }
+        }
+        return total;
+    }
+
+    private int countMatchingDestroyedBuildings(BattleReplay battleReplay, EpisodeTaskActionData action, int stars) {
+        if (battleReplay == null || battleReplay.getDamagedBuildings() == null) {
+            return stars > 0 ? 1 : 0;
+        }
+        Map<String, Integer> damaged = battleReplay.getDamagedBuildings();
+        if ("DestroyBuilding".equals(action.getType())) {
+            int destroyed = 0;
+            for (Integer pct : damaged.values()) {
+                if (pct != null && pct >= 100) {
+                    destroyed++;
+                }
+            }
+            return destroyed;
+        }
+        if (battleReplay.replayData == null || battleReplay.replayData.combatEncounter == null
+                || battleReplay.replayData.combatEncounter.map == null
+                || battleReplay.replayData.combatEncounter.map.buildings == null) {
+            return 0;
+        }
+        GameDataManager gameDataManager = ServiceFactory.instance().getGameDataManager();
+        int destroyed = 0;
+        boolean byType = "DestroyBuildingType".equals(action.getType());
+        for (Building b : battleReplay.replayData.combatEncounter.map.buildings) {
+            if (b.key == null || b.uid == null) {
+                continue;
+            }
+            Integer pct = damaged.get(b.key);
+            if (pct == null || pct < 100) {
+                continue;
+            }
+            BuildingData data = gameDataManager != null ? gameDataManager.getBuildingDataByUid(b.uid) : null;
+            if (byType) {
+                if (data != null && data.getType() != null
+                        && action.getItem() != null && action.getItem().equalsIgnoreCase(data.getType().name())) {
+                    destroyed++;
+                }
+            } else if (action.getItem() != null) {
+                String buildingId = data != null ? data.getBuildingID() : b.uid;
+                if (action.getItem().equalsIgnoreCase(buildingId) || action.getItem().equalsIgnoreCase(b.uid)) {
+                    destroyed++;
+                }
+            }
+        }
+        return destroyed;
     }
 
     private void updateDefenderAfterPvPBattle(BattleReplay battleReplay, PvpMatch pvpMatch) {

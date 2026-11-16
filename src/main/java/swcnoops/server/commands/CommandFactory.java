@@ -19,6 +19,14 @@ public class CommandFactory {
         this.add(new GetAuthToken());
         this.add(new ConfigEndpointsGet());
         this.add(new PlayerLogin());
+        this.add(new PlayerGet("player.get"));
+        this.add(new PlayerGet("player.getSyncContent"));
+        this.add(new PlayerStateReset("player.state.reset"));
+        this.add(new PlayerStateReset("player.content.reset"));
+        this.add(new PlayerMiscAction("player.error"));
+        this.add(new PlayerMiscAction("player.inventory.transfer"));
+        this.add(new PlayerMiscAction("player.account.external.unregister"));
+        this.add(new PlayerMiscAction("player.money.receipt.verify"));
         this.add(new PlayerPvpStatus());
         this.add(new PlayerContentGet());
         this.add(new PlayerDeviceRegister());
@@ -27,6 +35,7 @@ public class CommandFactory {
         this.add(new GuildInviteAction("guild.invite"));
         this.add(new GuildInviteAction("guild.invite.accept"));
         this.add(new GuildInviteAction("guild.invite.reject"));
+        this.add(new GuildInviteAction("guild.invite.sent"));
         this.add(new GuildWarClaim());
         this.add(new PlayerAccountExternalGet());
         this.add(new PlayerAccountExternalRegister());
@@ -86,6 +95,7 @@ public class CommandFactory {
         this.add(new GuildNotificationsGet());
         this.add(new GuildPromote());
         this.add(new GuildDemote());
+        this.add(new GuildSetLeader());
         this.add(new GuildJoinRequest());
         this.add(new GuildJoinAccept());
         this.add(new GuildJoinReject());

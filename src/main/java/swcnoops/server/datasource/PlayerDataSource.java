@@ -136,4 +136,8 @@ public interface PlayerDataSource {
     List<SquadInfo> getSquadLeaderboard(int limit);
 
     Map<String, Integer> getPlanetPopulationStats();
+
+    void saveAuthToken(String playerId, String authToken);
+
+    String getAuthToken(String playerId);
 }

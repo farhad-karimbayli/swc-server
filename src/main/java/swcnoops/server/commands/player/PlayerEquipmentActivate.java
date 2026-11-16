@@ -9,6 +9,8 @@ import swcnoops.server.requests.CommandResult;
 import swcnoops.server.requests.ResponseHelper;
 import swcnoops.server.session.PlayerSession;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class PlayerEquipmentActivate extends AbstractCommandAction<PlayerEquipmentActivate, CommandResult> {
@@ -25,19 +27,34 @@ public class PlayerEquipmentActivate extends AbstractCommandAction<PlayerEquipme
             Map<String, EquipmentData> eqMap = ServiceFactory.instance().getGameDataManager()
                     .getPatchData().getMap(EquipmentData.class);
             EquipmentData eq = eqMap != null ? eqMap.get(uid) : null;
-            if (eq != null) {
-                // Remove any lower/other level of the same equipmentID first
+
+            List<String> candidate = new ArrayList<>(armory.equipment);
+            if (eq != null && eq.getEquipmentID() != null) {
                 String eqId = eq.getEquipmentID();
-                if (eqId != null && eqMap != null) {
-                    armory.equipment.removeIf(existing -> {
-                        EquipmentData e = eqMap.get(existing);
-                        return e != null && eqId.equals(e.getEquipmentID());
-                    });
+                candidate.removeIf(existing -> {
+                    EquipmentData e = eqMap.get(existing);
+                    return e != null && eqId.equals(e.getEquipmentID());
+                });
+            }
+            if (!candidate.contains(uid)) {
+                candidate.add(uid);
+            }
+
+            if (eqMap != null && armory.capacity > 0) {
+                int usedSize = 0;
+                for (String itemUid : candidate) {
+                    EquipmentData item = eqMap.get(itemUid);
+                    if (item != null) {
+                        usedSize += Math.max(0, item.getSize());
+                    }
+                }
+                if (usedSize > armory.capacity) {
+                    return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_BAD_INPUT);
                 }
             }
-            if (!armory.equipment.contains(uid)) {
-                armory.equipment.add(uid);
-            }
+
+            armory.equipment.clear();
+            armory.equipment.addAll(candidate);
             playerSession.savePlayerKeepAlive();
         }
         return ResponseHelper.SUCCESS_COMMAND_RESULT;

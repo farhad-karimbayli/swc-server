@@ -55,30 +55,35 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
         return jsonParser.fromJsonObject(argumentObject, PlayerLogin.class);
     }
 
-    // TODO - need to fix this to log in properly for the player
     @Override
     protected PlayerLoginCommandResult execute(PlayerLogin arguments, long time) throws Exception {
         PlayerSession playerSession = ServiceFactory.instance().getSessionManager()
                 .loginPlayerSession(arguments.getPlayerId());
 
+        PlayerLoginCommandResult response = buildLoginResponse(
+                playerSession, arguments.getTimeZoneOffset(), arguments.getLocale(), time);
+        playerSession.savePlayerLogin(arguments.getTimeZoneOffset(), time);
+        return response;
+    }
+
+    public static PlayerLoginCommandResult buildLoginResponse(PlayerSession playerSession,
+                                                              float timeZoneOffset, String locale, long time) throws Exception {
         playerSession.playerLogin(time);
         // The client only learns its army at login, so this is where a refill becomes visible.
         AutoRefill.apply(playerSession, "login");
         PlayerLoginCommandResult response = loadPlayerTemplate(playerSession);
-        playerSession.getPlayerSettings().setTimeZoneOffset(arguments.getTimeZoneOffset());
-        if (arguments.getLocale() != null && !arguments.getLocale().isEmpty()) {
+        playerSession.getPlayerSettings().setTimeZoneOffset(timeZoneOffset);
+        if (locale != null && !locale.isEmpty()) {
             if (playerSession.getPlayerSettings().getSharedPreferences() == null) {
                 playerSession.getPlayerSettings().setSharedPreferences(new PreferencesMap());
             }
-            playerSession.getPlayerSettings().getSharedPreferences().put("locale", arguments.getLocale());
+            playerSession.getPlayerSettings().getSharedPreferences().put("locale", locale);
         }
-        mapLoginForPlayer(response, playerSession, time);
-        playerSession.savePlayerLogin(arguments.getTimeZoneOffset(), time);
-
+        new PlayerLogin().mapLoginForPlayer(response, playerSession, time);
         return response;
     }
 
-    private PlayerLoginCommandResult loadPlayerTemplate(PlayerSession playerSession) throws Exception {
+    private static PlayerLoginCommandResult loadPlayerTemplate(PlayerSession playerSession) throws Exception {
         // Fields the login does not fill from the player's own data (armory,
         // shard shop, tutorial flags in sharedPrefs) come straight from the
         // template. A player still in the tutorial gets the new-player one, so

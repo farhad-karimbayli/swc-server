@@ -1,12 +1,16 @@
 package swcnoops.server.game;
 
+import swcnoops.server.ServiceFactory;
 import swcnoops.server.model.CurrencyType;
 import swcnoops.server.model.InventoryStorage;
+import swcnoops.server.model.Squad;
+import swcnoops.server.session.GuildSession;
 import swcnoops.server.session.PlayerSession;
 import swcnoops.server.session.map.MapItem;
 import swcnoops.server.session.map.StorageBuilding;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CurrencyHelper {
@@ -201,5 +205,69 @@ public class CurrencyHelper {
             available = 0;
 
         return available;
+    }
+
+    /**
+     * Returns active squad-perk contractCost discount factor in [0.0, 0.95] for the given building.
+     */
+    public static double getActiveContractDiscount(PlayerSession playerSession, BuildingData buildingData, long now) {
+        if (playerSession == null || buildingData == null || buildingData.getType() == null) {
+            return 0.0;
+        }
+        GuildSession guildSession = playerSession.getGuildSession();
+        if (guildSession == null || guildSession.getSquadManager() == null) {
+            return 0.0;
+        }
+        Squad squad = guildSession.getSquadManager().getObjectForReading();
+        if (squad == null || squad.perks == null || squad.perks.available == null || squad.perks.available.isEmpty()) {
+            return 0.0;
+        }
+        GameDataManager gameDataManager = ServiceFactory.instance().getGameDataManager();
+        PatchData patchData = gameDataManager != null ? gameDataManager.getPatchData() : null;
+        Map<String, PerkData> perkMap = patchData != null ? patchData.getMap(PerkData.class) : null;
+        Map<String, PerkEffectData> effectMap = patchData != null ? patchData.getMap(PerkEffectData.class) : null;
+        if (perkMap == null || effectMap == null) {
+            return 0.0;
+        }
+        String targetBuilding = buildingData.getType().name();
+        long checkTime = now > 0 ? now : ServiceFactory.getSystemTimeSecondsFromEpoch();
+        double discount = 0.0;
+        for (Map.Entry<String, String> entry : squad.perks.available.entrySet()) {
+            PerkData perk = perkMap.get(entry.getKey());
+            if (perk == null || perk.getPerkEffects() == null || !isPerkActive(perk, entry.getValue(), checkTime)) {
+                continue;
+            }
+            for (String effectUid : perk.getPerkEffects()) {
+                PerkEffectData effect = effectMap.get(effectUid);
+                if (effect != null && "contractCost".equals(effect.getType())
+                        && targetBuilding.equals(effect.getBuilding())) {
+                    discount = Math.max(discount, effect.getDiscountFactor());
+                }
+            }
+        }
+        return Math.min(0.95, Math.max(0.0, discount));
+    }
+
+    private static boolean isPerkActive(PerkData perk, String storedTimestamp, long now) {
+        if (storedTimestamp == null || storedTimestamp.isEmpty()) {
+            return false;
+        }
+        try {
+            long ts = Long.parseLong(storedTimestamp);
+            long durationSec = Math.max(1L, perk.getActiveDuration()) * 60L;
+            return ts > now || (ts + durationSec > now);
+        } catch (NumberFormatException ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * Applies a fractional contractCost discount to a positive base cost.
+     */
+    public static int applyContractDiscount(int baseCost, double discount) {
+        if (baseCost <= 0 || discount <= 0.0) {
+            return baseCost;
+        }
+        return Math.max(1, (int) Math.floor(baseCost * (1.0 - Math.min(0.95, discount))));
     }
 }

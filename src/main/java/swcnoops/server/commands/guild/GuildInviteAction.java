@@ -2,6 +2,7 @@ package swcnoops.server.commands.guild;
 
 import swcnoops.server.ServiceFactory;
 import swcnoops.server.commands.AbstractCommandAction;
+import swcnoops.server.commands.player.response.StringListResult;
 import swcnoops.server.json.JsonParser;
 import swcnoops.server.requests.CommandResult;
 import swcnoops.server.requests.ResponseHelper;
@@ -10,7 +11,7 @@ import swcnoops.server.session.PlayerSession;
 import swcnoops.server.session.SessionManager;
 
 /**
- * Handles guild.invite, guild.invite.accept, and guild.invite.reject.
+ * Handles guild.invite, guild.invite.accept, guild.invite.reject, and guild.invite.sent.
  */
 public class GuildInviteAction extends AbstractCommandAction<GuildInviteAction, CommandResult> {
     private final String actionName;
@@ -23,6 +24,9 @@ public class GuildInviteAction extends AbstractCommandAction<GuildInviteAction, 
 
     @Override
     protected CommandResult execute(GuildInviteAction arguments, long time) throws Exception {
+        if ("guild.invite.sent".equals(this.actionName)) {
+            return new StringListResult();
+        }
         if ("guild.invite.accept".equals(this.actionName)
                 && arguments.getGuildId() != null && !arguments.getGuildId().isEmpty()) {
             SessionManager sm = ServiceFactory.instance().getSessionManager();

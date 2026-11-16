@@ -27,8 +27,9 @@ public class GuildWarAttackBaseComplete extends PlayerBattleComplete<GuildWarAtt
                 buffBase.battleInProgress = false;
                 buffBase.currentlyDefending = null;
                 if (arguments.getStars() > 0) {
+                    int maxLevel = GuildWarAttackBaseStart.getMaxBuffBaseLevel(arguments.getBuffBaseUid());
                     buffBase.ownerId = guildSession.getGuildId();
-                    buffBase.level = Math.max(1, buffBase.level + 1);
+                    buffBase.level = Math.min(maxLevel, Math.max(1, buffBase.level + 1));
                 }
                 ServiceFactory.instance().getPlayerDatasource().saveWar(war);
             }

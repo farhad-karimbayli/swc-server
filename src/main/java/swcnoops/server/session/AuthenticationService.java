@@ -15,8 +15,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AuthenticationService {
     private Map<String, String> playerTokens = new ConcurrentHashMap<>();
     public String createToken(String playerId) {
-        playerTokens.put(playerId, playerId + ":" + ServiceFactory.createRandomUUID());
-        return playerTokens.get(playerId);
+        String token = playerId + ":" + ServiceFactory.createRandomUUID();
+        playerTokens.put(playerId, token);
+        try {
+            if (ServiceFactory.instance() != null && ServiceFactory.instance().getPlayerDatasource() != null) {
+                ServiceFactory.instance().getPlayerDatasource().saveAuthToken(playerId, token);
+            }
+        } catch (Exception ignored) {
+        }
+        return token;
     }
 
     private boolean validAuthCommands(List<Command> commands) {
@@ -42,6 +49,17 @@ public class AuthenticationService {
         }
         String playerId = authKey.substring(0, separator);
         String expectedKey = playerTokens.get(playerId);
+        if (expectedKey == null) {
+            try {
+                if (ServiceFactory.instance() != null && ServiceFactory.instance().getPlayerDatasource() != null) {
+                    expectedKey = ServiceFactory.instance().getPlayerDatasource().getAuthToken(playerId);
+                    if (expectedKey != null) {
+                        playerTokens.put(playerId, expectedKey);
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
         if (expectedKey != null) {
             if (!expectedKey.equals(authKey))
                 errorCode = ResponseHelper.LOGIN_TIME_MISMATCH;
