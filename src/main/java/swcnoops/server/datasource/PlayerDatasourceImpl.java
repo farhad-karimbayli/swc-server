@@ -159,7 +159,9 @@ public class PlayerDatasourceImpl implements PlayerDataSource {
     @Override
     public Player loadPlayer(String playerId) {
         Player player = this.playerCollection.find(eq("_id", playerId)).first();
-        setGuildInfo(player, playerId);
+        if (player != null) {
+            setGuildInfo(player, playerId);
+        }
         return player;
     }
 
@@ -1410,12 +1412,11 @@ public class PlayerDatasourceImpl implements PlayerDataSource {
         // should return the correct error message rather than not found
         Bson isOpponent = eq("_id", opponentId);
         Bson notBeingAttacked = or(eq("currentPvPDefence", null), lt("currentPvPDefence.expiration", timeNow));
-        Bson playerNotPlaying = or(lt("keepAlive", timeNow - 130), eq("keepAlive", null));
-        Bson match = Aggregates.match(and(isOpponent, notBeingAttacked, playerNotPlaying));
+        Bson match = and(isOpponent, notBeingAttacked);
 
         // revenge is free
         int creditsCharge = 0;
-        PvpMatch pvpMatch = createPvpMatch(match, creditsCharge, playerSession, pvpManager, timeNow);
+        PvpMatch pvpMatch = createPvpMatch(Collections.singletonList(match), creditsCharge, playerSession, pvpManager, timeNow);
 
         if (pvpMatch != null) {
             pvpMatch.setRevenge(true);
@@ -1425,34 +1426,38 @@ public class PlayerDatasourceImpl implements PlayerDataSource {
         return pvpMatch;
     }
 
-    private PvpMatch createPvpMatch(Bson match, int creditCharge, PlayerSession playerSession, PvpManager pvpManager, long time) {
-        List<Bson> aggregates = Arrays.asList(match,
-                Aggregates.project(include("playerSettings.baseMap", "playerSettings.name",
-                        "playerSettings.faction", "playerSettings.hqLevel",
-                        "playerSettings.guildId", "playerSettings.guildName",
-                        "playerSettings.inventoryStorage", "playerSettings.scalars", "playerSettings.damagedBuildings",
-                        "currentPvPDefence", "playerSettings.donatedTroops", "playerSettings.deployableTroops.champion",
-                        "playerSettings.creature", "playerSettings.troops", "playerSettings.tournaments",
-                        "playerSettings.protectedUntil")),
-                Aggregates.sample(1));
+    private PvpMatch createPvpMatch(List<Bson> matchFilters, int creditCharge, PlayerSession playerSession, PvpManager pvpManager, long time) {
+        Bson projection = Aggregates.project(include("playerSettings.baseMap", "playerSettings.name",
+                "playerSettings.faction", "playerSettings.hqLevel",
+                "playerSettings.guildId", "playerSettings.guildName",
+                "playerSettings.inventoryStorage", "playerSettings.scalars", "playerSettings.damagedBuildings",
+                "currentPvPDefence", "playerSettings.donatedTroops", "playerSettings.deployableTroops.champion",
+                "playerSettings.creature", "playerSettings.troops", "playerSettings.tournaments",
+                "playerSettings.protectedUntil"));
+        Bson sample = Aggregates.sample(1);
 
         PvpMatch pvpMatch = null;
         try (ClientSession clientSession = this.mongoClient.startSession()) {
             startTransaction(clientSession);
 
-            // clear last PvP attack
+            // clear last PvP attack once for all fallback attempts
             clearLastPvPAttack(clientSession, pvpManager);
-            AggregateIterable<Player> inactivePlayersIterable = this.playerCollection.aggregate(clientSession, aggregates);
 
-            try (MongoCursor<Player> inactivePlayerCursor = inactivePlayersIterable.cursor()) {
-                if (inactivePlayerCursor.hasNext()) {
-                    Player opponentPlayer = inactivePlayerCursor.next();
-                    pvpMatch = mapPvPMatch(playerSession.getPlayerId(), creditCharge, opponentPlayer, time);
-                    // they were attacked but has not been cleaned up, we will clean up the attacker otherwise
-                    // unique index will fail
-                    if (opponentPlayer.getCurrentPvPDefence() != null) {
-                        PvpAttack pvpAttackDefence = opponentPlayer.getCurrentPvPDefence();
-                        clearPvPAttacker(clientSession, pvpAttackDefence);
+            for (Bson filter : matchFilters) {
+                List<Bson> aggregates = Arrays.asList(Aggregates.match(filter), projection, sample);
+                AggregateIterable<Player> inactivePlayersIterable = this.playerCollection.aggregate(clientSession, aggregates);
+
+                try (MongoCursor<Player> inactivePlayerCursor = inactivePlayersIterable.cursor()) {
+                    if (inactivePlayerCursor.hasNext()) {
+                        Player opponentPlayer = inactivePlayerCursor.next();
+                        pvpMatch = mapPvPMatch(playerSession.getPlayerId(), creditCharge, opponentPlayer, time);
+                        // they were attacked but has not been cleaned up, we will clean up the attacker otherwise
+                        // unique index will fail
+                        if (opponentPlayer.getCurrentPvPDefence() != null) {
+                            PvpAttack pvpAttackDefence = opponentPlayer.getCurrentPvPDefence();
+                            clearPvPAttacker(clientSession, pvpAttackDefence);
+                        }
+                        break;
                     }
                 }
             }
@@ -1535,11 +1540,16 @@ public class PlayerDatasourceImpl implements PlayerDataSource {
         Bson notProtected = or(eq("playerSettings.protectedUntil", null), lt("playerSettings.protectedUntil", timeNow));
         Bson otherFaction = ne("playerSettings.faction", pvpManager.getPlayerSession().getPlayer().getPlayerSettings().getFaction());
         Bson playerNotPlaying = or(lt("keepAlive", timeNow - 130), eq("keepAlive", null));
-        Bson match = Aggregates.match(and(notMe, otherFaction, notBeingAttacked, notProtected, playerNotPlaying, notAlreadySeen,
-                or(hqQuery, xpQuery)));
+        Bson matchStrict = and(notMe, otherFaction, notBeingAttacked, notProtected, playerNotPlaying, notAlreadySeen,
+                or(hqQuery, xpQuery));
+        // Fallback 1: match any real player of opposite faction who is offline/not playing
+        Bson matchAnyOffline = and(notMe, otherFaction, notBeingAttacked, notProtected, playerNotPlaying, notAlreadySeen);
+        // Fallback 2: on small servers, if no offline players found, match any real player of opposite faction even if playing
+        Bson matchAnyOnline = and(notMe, otherFaction, notBeingAttacked, notProtected, notAlreadySeen);
 
         int creditsCharged = ServiceFactory.instance().getGameDataManager().getPvpMatchCost(playerHq);
-        PvpMatch pvpMatch = createPvpMatch(match, creditsCharged, playerSession, pvpManager, timeNow);
+        PvpMatch pvpMatch = createPvpMatch(Arrays.asList(matchStrict, matchAnyOffline, matchAnyOnline),
+                creditsCharged, playerSession, pvpManager, timeNow);
 
         if (pvpMatch != null) {
             pvpMatch.setDevBase(false);
@@ -1582,7 +1592,7 @@ public class PlayerDatasourceImpl implements PlayerDataSource {
         if (pvpManager.getCurrentPvPMatch() != null)
             isDevBase = pvpManager.getCurrentPvPMatch().isDevBase();
 
-        if (lastPlayerValues.getCurrentPvPAttack() != null && !isDevBase) {
+        if (lastPlayerValues != null && lastPlayerValues.getCurrentPvPAttack() != null && !isDevBase) {
             PvpAttack pvpAttack = lastPlayerValues.getCurrentPvPAttack();
             Player lastOpponentPlayer = this.playerCollection.findOneAndUpdate(clientSession,
                     combine(eq("_id", pvpAttack.playerId), eq("currentPvPDefence.battleId", pvpAttack.battleId)),

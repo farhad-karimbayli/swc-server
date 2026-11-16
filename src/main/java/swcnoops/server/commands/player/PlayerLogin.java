@@ -3,13 +3,11 @@ package swcnoops.server.commands.player;
 import swcnoops.server.commands.AbstractCommandAction;
 import swcnoops.server.ServiceFactory;
 import swcnoops.server.commands.Command;
+import swcnoops.server.datasource.PlayerCampaignMission;
 import swcnoops.server.datasource.PlayerSettings;
 import swcnoops.server.datasource.PvpAttack;
 import swcnoops.server.datasource.TournamentStat;
-import swcnoops.server.game.ContractType;
-import swcnoops.server.game.GameDataManager;
-import swcnoops.server.game.RaidManager;
-import swcnoops.server.game.TroopData;
+import swcnoops.server.game.*;
 import swcnoops.server.json.JsonParser;
 import swcnoops.server.commands.player.response.PlayerLoginCommandResult;
 import swcnoops.server.model.*;
@@ -29,6 +27,7 @@ import java.util.*;
 
 public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginCommandResult> {
     private float timeZoneOffset;
+    private String locale;
 
     public float getTimeZoneOffset() {
         return timeZoneOffset;
@@ -36,6 +35,14 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
 
     public void setTimeZoneOffset(float timeZoneOffset) {
         this.timeZoneOffset = timeZoneOffset;
+    }
+
+    public String getLocale() {
+        return locale;
+    }
+
+    public void setLocale(String locale) {
+        this.locale = locale;
     }
 
     @Override
@@ -59,6 +66,12 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
         AutoRefill.apply(playerSession, "login");
         PlayerLoginCommandResult response = loadPlayerTemplate(playerSession);
         playerSession.getPlayerSettings().setTimeZoneOffset(arguments.getTimeZoneOffset());
+        if (arguments.getLocale() != null && !arguments.getLocale().isEmpty()) {
+            if (playerSession.getPlayerSettings().getSharedPreferences() == null) {
+                playerSession.getPlayerSettings().setSharedPreferences(new PreferencesMap());
+            }
+            playerSession.getPlayerSettings().getSharedPreferences().put("locale", arguments.getLocale());
+        }
         mapLoginForPlayer(response, playerSession, time);
         playerSession.savePlayerLogin(arguments.getTimeZoneOffset(), time);
 
@@ -273,6 +286,13 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
         PlayerSettings playerSettings = playerSession.getPlayerSettings();
         playerLoginResponse.sharedPrefs.putAll(playerSettings.getSharedPreferences());
 
+        // Synchronize locale with player settings
+        String locale = playerSettings.getSharedPreferences().get("locale");
+        if (locale != null && !locale.isEmpty()) {
+            playerLoginResponse.locale = locale;
+            playerLoginResponse.sharedPrefs.put("locale", locale);
+        }
+
         // this disables login to google at start up
         playerLoginResponse.sharedPrefs.put("promptedForGoogleSignin", "1");
         // this is to stop armory tutorial from triggering
@@ -284,8 +304,37 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
     }
 
     private void mapCampaignAndMissions(PlayerModel playerModel, PlayerSettings playerSettings) {
-        playerModel.campaigns = playerSettings.getPlayerCampaignMission().campaigns;
-        playerModel.missions = playerSettings.getPlayerCampaignMission().missions;
+        PlayerCampaignMission pcm = playerSettings.getPlayerCampaignMission();
+        if (pcm == null) {
+            pcm = new PlayerCampaignMission(new HashMap<>(), new HashMap<>());
+            playerSettings.setPlayerCampaignMission(pcm);
+        }
+        if (pcm.campaigns == null) {
+            pcm.campaigns = new HashMap<>();
+        }
+        if (pcm.missions == null) {
+            pcm.missions = new HashMap<>();
+        }
+
+        String currentQuest = playerSettings.getCurrentQuest();
+        boolean finishedTutorial = currentQuest == null || currentQuest.isEmpty();
+        FactionType faction = playerSettings.getFaction();
+        if (finishedTutorial && (faction == FactionType.empire || faction == FactionType.rebel)) {
+            boolean hasFactionMission = pcm.missions.values().stream()
+                    .anyMatch(m -> m != null && m.campaignUid != null && !"cmp_fue".equals(m.campaignUid));
+            if (!hasFactionMission) {
+                CampaignSet campaignSet = ServiceFactory.instance().getGameDataManager().getCampaignForFaction(faction);
+                if (campaignSet != null) {
+                    CampaignMissionSet firstSet = campaignSet.getCampaignMissionSet(1);
+                    if (firstSet != null) {
+                        pcm.addMission(firstSet.getMission(1));
+                    }
+                }
+            }
+        }
+
+        playerModel.campaigns = pcm.campaigns;
+        playerModel.missions = pcm.missions;
     }
 
     private void mapCreatureTrapData(PlayerModel playerModel, PlayerSession playerSession) {

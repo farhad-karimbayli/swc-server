@@ -34,6 +34,20 @@ import java.util.Map;
 public final class AutoRefill {
     private static final Logger LOG = LoggerFactory.getLogger(AutoRefill.class);
 
+    private static final class CachedSpec {
+        final String path;
+        final long lastModified;
+        final Spec spec;
+
+        CachedSpec(String path, long lastModified, Spec spec) {
+            this.path = path;
+            this.lastModified = lastModified;
+            this.spec = spec;
+        }
+    }
+
+    private static volatile CachedSpec cachedSpec;
+
     /** The refill file's shape. Fields are public for Jackson. */
     public static class Spec {
         public String _comment;
@@ -59,13 +73,9 @@ public final class AutoRefill {
         if (!file.exists())
             return;
 
-        Spec spec;
-        try {
-            spec = ServiceFactory.instance().getJsonParser().fromJsonFile(file.getAbsolutePath(), Spec.class);
-        } catch (Exception e) {
-            LOG.warn("auto refill skipped, cannot read {}: {}", file, e.toString());
+        Spec spec = loadSpec(file);
+        if (spec == null)
             return;
-        }
 
         if (spec.players == null || !spec.players.contains(playerSession.getPlayerId()))
             return;
@@ -84,6 +94,23 @@ public final class AutoRefill {
 
         if (added > 0)
             LOG.info("auto refill after {} for {}: {} units added", reason, playerSession.getPlayerId(), added);
+    }
+
+    private static Spec loadSpec(File file) {
+        String path = file.getAbsolutePath();
+        long mtime = file.lastModified();
+        CachedSpec current = cachedSpec;
+        if (current != null && current.path.equals(path) && current.lastModified == mtime) {
+            return current.spec;
+        }
+        try {
+            Spec parsed = ServiceFactory.instance().getJsonParser().fromJsonFile(path, Spec.class);
+            cachedSpec = new CachedSpec(path, mtime, parsed);
+            return parsed;
+        } catch (Exception e) {
+            LOG.warn("auto refill skipped, cannot read {}: {}", file, e.toString());
+            return null;
+        }
     }
 
     private static int topUp(DeployableQueue queue, List<String> unitIds, int amount) {

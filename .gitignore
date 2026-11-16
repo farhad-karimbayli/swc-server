@@ -5,6 +5,7 @@ cp.txt
 # Logs
 *.log
 run.log
+/logs/
 
 # Batch exchange dumps
 swc-batches/

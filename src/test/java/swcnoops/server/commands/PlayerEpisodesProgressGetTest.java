@@ -17,8 +17,6 @@ import static org.junit.Assert.assertNotNull;
 public class PlayerEpisodesProgressGetTest {
     static {
         ServiceFactory.instance(new Config());
-        ServiceFactory.instance().getPlayerDatasource().initOnStartup();
-        ServiceFactory.instance().getGameDataManager().initOnStartup();
     }
 
     @Test

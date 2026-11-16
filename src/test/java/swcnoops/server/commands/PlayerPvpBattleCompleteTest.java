@@ -12,13 +12,13 @@ import static org.junit.Assert.assertNotNull;
 public class PlayerPvpBattleCompleteTest {
     static {
         ServiceFactory.instance(new Config());
-        ServiceFactory.instance().getPlayerDatasource().initOnStartup();
-        ServiceFactory.instance().getGameDataManager().initOnStartup();
     }
 
     @Ignore
     @Test
     public void test() throws Exception {
+        ServiceFactory.instance().getPlayerDatasource().initOnStartup();
+        ServiceFactory.instance().getGameDataManager().initOnStartup();
         PlayerPvpBattleComplete action = new PlayerPvpBattleComplete();
         PlayerPvpBattleCompleteCommandResult response = action.execute(new PlayerPvpBattleComplete(), 1);
         assertNotNull(response);

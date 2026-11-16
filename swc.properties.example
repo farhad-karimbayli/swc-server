@@ -31,6 +31,10 @@ coreJsonPatches=base.json;cae.json;trp.json
 loadDevBases=true
 freeResources=true
 
+# Rotating batch dumps written to $TMPDIR/swc-batches (set batchDumpEnabled=false to disable)
+batchDumpEnabled=true
+batchDumpMaxFiles=200
+
 # MongoDB connection (requires replicaSet for transaction support)
 mongoDBConnection=mongodb://localhost:27017/?replicaSet=rs0
 mongoDBName=swc

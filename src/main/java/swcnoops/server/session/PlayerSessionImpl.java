@@ -1319,6 +1319,9 @@ public class PlayerSessionImpl implements PlayerSession {
     public void buildingUpgradeAll(String buildingUid, int credits, int materials, int contraband, int crystals, long time) {
         this.processCompletedContracts(time);
         List<MapItem> allMapItems = this.playerMapItems.getMapItemsByBuildingUid(buildingUid);
+        if (allMapItems == null || allMapItems.isEmpty()) {
+            return;
+        }
         for (MapItem mapItem : allMapItems) {
             this.droidManager.upgradeBuildUnit(mapItem, null, credits, materials, contraband, time);
             this.droidManager.buyout(mapItem.getBuildingKey(), crystals, time);
@@ -1382,10 +1385,18 @@ public class PlayerSessionImpl implements PlayerSession {
 
         // add the first campaign and mission for this faction
         CampaignSet campaignSet = ServiceFactory.instance().getGameDataManager().getCampaignForFaction(faction);
-        CampaignMissionSet campaignMissionSet = campaignSet.getCampaignMissionSet(1);
-        PlayerCampaignMission playerCampaignMission = this.getPlayerSettings().getPlayerCampaignMission();
-        CampaignMissionData campaignMissionData = campaignMissionSet.getMission(1);
-        playerCampaignMission.addMission(campaignMissionData);
+        if (campaignSet != null) {
+            CampaignMissionSet campaignMissionSet = campaignSet.getCampaignMissionSet(1);
+            if (campaignMissionSet != null) {
+                PlayerCampaignMission playerCampaignMission = this.getPlayerSettings().getPlayerCampaignMission();
+                if (playerCampaignMission == null) {
+                    playerCampaignMission = new PlayerCampaignMission(new HashMap<>(), new HashMap<>());
+                    this.getPlayerSettings().setPlayerCampaignMission(playerCampaignMission);
+                }
+                CampaignMissionData campaignMissionData = campaignMissionSet.getMission(1);
+                playerCampaignMission.addMission(campaignMissionData);
+            }
+        }
         this.savePlayerSession();
     }
 

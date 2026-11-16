@@ -12,10 +12,10 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 JAVA_BIN=""
 if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then
   JAVA_BIN="$JAVA_HOME/bin/java"
+elif command -v /usr/libexec/java_home >/dev/null 2>&1 && /usr/libexec/java_home -v 17+ >/dev/null 2>&1; then
+  JAVA_BIN="$(/usr/libexec/java_home -v 17+)/bin/java"
 elif command -v java >/dev/null 2>&1; then
   JAVA_BIN="$(command -v java)"
-elif [ -d "/Users/karimbaylifarhad/Library/Java/JavaVirtualMachines/temurin-21.0.11/Contents/Home/bin" ]; then
-  JAVA_BIN="/Users/karimbaylifarhad/Library/Java/JavaVirtualMachines/temurin-21.0.11/Contents/Home/bin/java"
 else
   echo "Error: Java was not found. Please install Java 17+ or set JAVA_HOME." >&2
   exit 1

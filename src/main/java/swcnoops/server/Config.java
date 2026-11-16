@@ -6,7 +6,7 @@ import java.lang.reflect.Field;
 import java.util.Properties;
 
 public class Config {
-    private static final Logger LOG = LoggerFactory.getLogger(SparkMain.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Config.class);
 
     public Integer PROTOCOL_VERSION = 93;
     public Integer webServicePort = 8080;
@@ -25,13 +25,13 @@ public class Config {
     /** Players and amounts for session/AutoRefill, relative to swcRootPath; empty turns it off. */
     public String autoRefillFile = "";
     public String swcFolderName = "swcFiles";
-    public String swcRootPath = "c:/swcnoops/";
-    public String layoutsPath = swcRootPath + "layouts";
-    public String event2BiLoggingIpAddress = "http://192.168.1.142:8080";
+    public String swcRootPath = ".";
+    public String layoutsPath = "./layouts";
+    public String event2BiLoggingIpAddress = "http://127.0.0.1:8080";
     public String troopJson = "patches/manifest45/trp.json";
     public String baseJson = "patches/manifest45/base.json";
     public String caeJson = "patches/manifest45/cae.json";
-    public String cdnRoots = "http://192.168.1.142:8080/swcFiles/";
+    public String cdnRoots = "http://127.0.0.1:8080/swcFiles/";
     public boolean createBotPlayersInGroup = true;
     public boolean commandTriggerProcessorEnabled = true;
     public long attackDuration = 60 * 2;            // 2 minutes
@@ -42,14 +42,18 @@ public class Config {
     public long warCoolDownDuration = 60 * 60 * 24;        // war cool down
     public int batchResponseReplayWait = 1000 * 5;
     public boolean enableBatchResponseReplayer = false;
+    /** Whether to dump batch request/response pairs to $TMPDIR/swc-batches. */
+    public boolean batchDumpEnabled = true;
+    /** Maximum number of rotating batch dump pairs to keep (0 = unlimited). */
+    public int batchDumpMaxFiles = 200;
     public boolean freeResources = true;
-    public boolean loadDevBases = true;
+    public boolean loadDevBases = false;
     public boolean handleMissingAccounts = true;
-    public String mongoDBConnection = "mongodb+srv://user:password@localhost/?retryWrites=true&w=majority";
-    public String mongoDBName = "dev";
+    public String mongoDBConnection = "mongodb://localhost:27017/?replicaSet=rs0";
+    public String mongoDBName = "swc";
 
     public int manifestVersion = 2045;
-    public String coreJsonPatches = "arc.json;base.json;cae.json;olc.json";
+    public String coreJsonPatches = "base.json;cae.json;trp.json";
     private int manifestVersionToUse;
     static final public String manifestFileTemplate = "manifests/__manifest_zyngaswc_prod.";
 

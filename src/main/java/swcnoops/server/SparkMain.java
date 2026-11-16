@@ -110,7 +110,7 @@ public class SparkMain {
             dump(n, "request", batchRequestJson);
             String json = ServiceFactory.instance().getBatchProcessor().processBatchPostBody(batchRequestJson);
             dump(n, "response", json);
-            LOG.info("batch #{} written to {}", n, DUMP_DIR);
+            LOG.info("batch #{} [{}]", n, commandNames(batchRequestJson));
             response.type("application/json");
             response.body(json);
             return json;
@@ -122,15 +122,19 @@ public class SparkMain {
     private static final java.nio.file.Path DUMP_DIR =
             java.nio.file.Paths.get(System.getProperty("java.io.tmpdir"), "swc-batches");
 
-    /** Writes one side of a batch exchange to a file, ignoring any failure. */
+    /** Writes one side of a batch exchange to a rotating file, ignoring any failure. */
     private static void dump(int number, String kind, String body) {
-        if (body == null) {
+        Config config = ServiceFactory.instance().getConfig();
+        if (body == null || !config.batchDumpEnabled) {
             return;
         }
         try {
             java.nio.file.Files.createDirectories(DUMP_DIR);
+            int slot = config.batchDumpMaxFiles > 0
+                    ? ((number - 1) % config.batchDumpMaxFiles) + 1
+                    : number;
             java.nio.file.Files.write(
-                    DUMP_DIR.resolve(String.format("%03d-%s.json", number, kind)),
+                    DUMP_DIR.resolve(String.format("%03d-%s.json", slot, kind)),
                     body.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         } catch (Exception e) {
             LOG.warn("could not write batch dump: {}", e.toString());
@@ -156,26 +160,65 @@ public class SparkMain {
     private static class GetFile implements Route {
         @Override
         public Object handle(Request request, Response response) throws Exception {
-            String path = ServiceFactory.instance().getConfig().swcRootPath + request.pathInfo();
+            java.nio.file.Path swcRoot = java.nio.file.Paths.get(ServiceFactory.instance().getConfig().swcRootPath)
+                    .toAbsolutePath().normalize();
+            String relPath = request.pathInfo() == null ? "" : request.pathInfo().replaceFirst("^/+", "");
+            java.nio.file.Path requested = swcRoot.resolve(relPath).normalize();
+            if (!requested.startsWith(swcRoot)) {
+                response.status(403);
+                return "Forbidden";
+            }
+
+            java.nio.file.Path resolved = resolveFallbackFile(swcRoot, requested);
+            if (resolved == null || !java.nio.file.Files.isRegularFile(resolved)) {
+                response.status(404);
+                return "Resource not found";
+            }
+
+            response.type("octet-stream");
+            response.status(200);
+
+            ServletOutputStream os = response.raw().getOutputStream();
+            try (InputStream in = new BufferedInputStream(java.nio.file.Files.newInputStream(resolved))) {
+                IOUtils.copy(in, os);
+            }
+            os.flush();
+            return "";
+        }
+
+        private java.nio.file.Path resolveFallbackFile(java.nio.file.Path swcRoot, java.nio.file.Path requested) {
+            if (java.nio.file.Files.isRegularFile(requested)) {
+                return requested;
+            }
+            String pathStr = requested.toString().replace('\\', '/');
             // Campaign attack missions fetch an enemy base layout from
             // swcFiles/<v>/battles/<name>.json. The original designed layouts
             // are almost all lost, so a missing one falls back to a valid base
             // instead of a 404, which lets the mission load and be played.
-            if (path.contains("/battles/") && !new java.io.File(path).exists()) {
-                path = ServiceFactory.instance().getConfig().swcRootPath
-                        + "/swcFiles/battles/_default_mission.json";
+            if (pathStr.contains("/battles/")) {
+                return swcRoot.resolve("swcFiles/battles/_default_mission.json");
             }
-            //long fileSize = Files.size(Paths.get(path));
-            response.type("octet-stream");
-            //response.raw().setContentLength((int) fileSize);
-            response.status(200);
-
-            final ServletOutputStream os = response.raw().getOutputStream();
-            final InputStream in = new BufferedInputStream(new FileInputStream(path));
-            IOUtils.copy(in, os);
-            in.close();
-            os.close();
-            return "";
+            if (pathStr.contains("/strings/")) {
+                String lower = pathStr.toLowerCase();
+                boolean isRu = lower.contains("ru-ru") || lower.contains("ru_ru");
+                boolean isHn = lower.contains("strings-hn");
+                String[] candidates = isRu
+                        ? (isHn
+                            ? new String[]{"swcFiles/1604000000/strings/strings-hn_ru-ru.json.android.assetbundle",
+                                           "swcFiles/1584443067/strings/strings-hn_ru-ru.json.android.assetbundle"}
+                            : new String[]{"swcFiles/1604000000/strings/strings_ru-ru.json.android.assetbundle",
+                                           "swcFiles/1576242239/strings/strings_ru-ru.json.android.assetbundle"})
+                        : (isHn
+                            ? new String[]{"swcFiles/1584443067/strings/strings-hn_en-us.json.android.assetbundle"}
+                            : new String[]{"swcFiles/1576242239/strings/strings_en-us.json.android.assetbundle"});
+                for (String candidate : candidates) {
+                    java.nio.file.Path p = swcRoot.resolve(candidate);
+                    if (java.nio.file.Files.isRegularFile(p)) {
+                        return p;
+                    }
+                }
+            }
+            return requested;
         }
     }
 

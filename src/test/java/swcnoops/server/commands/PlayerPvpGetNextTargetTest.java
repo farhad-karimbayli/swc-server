@@ -12,13 +12,13 @@ import static org.junit.Assert.assertNotNull;
 public class PlayerPvpGetNextTargetTest {
     static {
         ServiceFactory.instance(new Config());
-        ServiceFactory.instance().getPlayerDatasource().initOnStartup();
-        ServiceFactory.instance().getGameDataManager().initOnStartup();
     }
 
     @Ignore
     @Test
     public void testNextLayout() throws Exception {
+        ServiceFactory.instance().getPlayerDatasource().initOnStartup();
+        ServiceFactory.instance().getGameDataManager().initOnStartup();
         PlayerPvpGetNextTarget playerPvpGetNextTarget = new PlayerPvpGetNextTarget();
         CommandResult response = playerPvpGetNextTarget.execute(null, 1);
         assertNotNull(response);

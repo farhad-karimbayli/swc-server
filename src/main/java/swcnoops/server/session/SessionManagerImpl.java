@@ -35,18 +35,13 @@ public class SessionManagerImpl implements SessionManager {
     }
 
     private PlayerSession getOrLoadPlayerSession(String playerId) {
-        PlayerSession playerSession;
-        if (!this.players.containsKey(playerId)) {
-            Player player = loadPlayer(playerId);
-            if (player != null) {
-                playerSession = new PlayerSessionImpl(player);
-                players.put(playerSession.getPlayerId(), playerSession);
-            }
+        if (playerId == null) {
+            return null;
         }
-
-        playerSession = this.players.get(playerId);
-
-        return playerSession;
+        return this.players.computeIfAbsent(playerId, id -> {
+            Player player = loadPlayer(id);
+            return player != null ? new PlayerSessionImpl(player) : null;
+        });
     }
 
     private Player loadPlayer(String playerId) {

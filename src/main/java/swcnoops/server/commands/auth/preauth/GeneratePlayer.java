@@ -9,7 +9,11 @@ import swcnoops.server.commands.auth.preauth.response.GeneratePlayerCommandResul
 import swcnoops.server.requests.EmptyMessage;
 import swcnoops.server.requests.Messages;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class GeneratePlayer extends AbstractCommandAction<GeneratePlayer, GeneratePlayerCommandResult> {
+    private String locale;
     @Override
     final public String getAction() {
         return "auth.preauth.generatePlayer";
@@ -24,9 +28,21 @@ public class GeneratePlayer extends AbstractCommandAction<GeneratePlayer, Genera
     protected GeneratePlayerCommandResult execute(GeneratePlayer arguments, long time) throws Exception {
         GeneratePlayerCommandResult generatePlayerResponse = GeneratePlayerCommandResult.newInstance();
         PlayerLoginCommandResult template = loadPlayerTemplate();
+        Map<String, String> sharedPrefs = new HashMap<>();
+        if (arguments.getLocale() != null && !arguments.getLocale().isEmpty()) {
+            sharedPrefs.put("locale", arguments.getLocale());
+        }
         ServiceFactory.instance().getPlayerDatasource()
-                .newPlayer(generatePlayerResponse.playerId, generatePlayerResponse.secret, template.playerModel, null, "new");
+                .newPlayer(generatePlayerResponse.playerId, generatePlayerResponse.secret, template.playerModel, sharedPrefs, "new");
         return generatePlayerResponse;
+    }
+
+    public String getLocale() {
+        return locale;
+    }
+
+    public void setLocale(String locale) {
+        this.locale = locale;
     }
 
     private PlayerLoginCommandResult loadPlayerTemplate() throws Exception {

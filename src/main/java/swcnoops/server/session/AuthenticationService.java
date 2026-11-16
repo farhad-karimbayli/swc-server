@@ -36,7 +36,11 @@ public class AuthenticationService {
     private Integer validAuthKey(String authKey) {
         Integer errorCode = null;
 
-        String playerId = authKey.substring(0, authKey.indexOf(":"));
+        int separator = authKey.indexOf(':');
+        if (separator <= 0) {
+            return ResponseHelper.STATUS_CODE_BAD_INPUT;
+        }
+        String playerId = authKey.substring(0, separator);
         String expectedKey = playerTokens.get(playerId);
         if (expectedKey != null) {
             if (!expectedKey.equals(authKey))

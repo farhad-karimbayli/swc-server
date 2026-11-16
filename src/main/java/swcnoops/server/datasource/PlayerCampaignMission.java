@@ -28,6 +28,12 @@ public class PlayerCampaignMission {
     public Mission addMission(CampaignMissionData campaignMissionData) {
         Mission mission = null;
         if (campaignMissionData != null) {
+            if (this.missions == null) {
+                this.missions = new HashMap<>();
+            }
+            if (this.campaigns == null) {
+                this.campaigns = new HashMap<>();
+            }
             mission = this.missions.get(campaignMissionData.getUid());
 
             if (mission == null) {
@@ -93,11 +99,15 @@ public class PlayerCampaignMission {
                 nextMissionIndex = 1;
                 CampaignSet campaignSet = ServiceFactory.instance().getGameDataManager()
                         .getCampaignForFaction(campaignMissionSet.getCampaignData().getFaction());
-                campaignMissionSet = campaignSet.getCampaignMissionSet(campaignMissionSet.getOrder() + 1);
+                campaignMissionSet = campaignSet != null
+                        ? campaignSet.getCampaignMissionSet(campaignMissionSet.getOrder() + 1)
+                        : null;
             }
 
-            CampaignMissionData nextcampaignMissionData = campaignMissionSet.getMission(nextMissionIndex);
-            this.addMission(nextcampaignMissionData);
+            if (campaignMissionSet != null) {
+                CampaignMissionData nextcampaignMissionData = campaignMissionSet.getMission(nextMissionIndex);
+                this.addMission(nextcampaignMissionData);
+            }
         }
     }
 

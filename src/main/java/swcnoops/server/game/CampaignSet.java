@@ -33,6 +33,9 @@ public class CampaignSet {
     }
 
     public CampaignMissionSet getCampaignMissionSet(int order) {
+        if (order < 1 || order > this.campaignMissionSets.size()) {
+            return null;
+        }
         return this.campaignMissionSets.get(order - 1);
     }
 
