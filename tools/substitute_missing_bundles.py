@@ -251,6 +251,72 @@ def resolve_substitutions(present, missing):
                 subs.append((p, "assetbundles/android/audio_betaunit.assetbundle", "Audio: Unit sound fallback"))
                 continue
 
+        # 9. Squad War crates -> objective crates of matching tier
+        if fn.startswith("cratesqwar"):
+            cand = f"assetbundles/android/{fn.replace('cratesqwar', 'crateobjec')}"
+            if cand in present:
+                subs.append((p, cand, "Crate: Squad war crate fallback"))
+                continue
+
+        # 10. Holonet / Command Center banners & character transmissions
+        if fn.startswith(("hn_", "hh_", "hc_")):
+            is_rebel = fn.endswith("_r.assetbundle") or "_rbl" in fn or "_rebel" in fn
+            preferred = [
+                "assetbundles/android/hn_cc_1_hondo_ohnaka_r.assetbundle" if is_rebel else "assetbundles/android/hn_cc_1_hondo_ohnaka_e.assetbundle",
+                "assetbundles/android/hn_cc_1_hondo_ohnaka_e.assetbundle",
+                "assetbundles/android/hc_cc_1_transportvehicle_e.assetbundle",
+            ]
+            for cand in preferred:
+                if cand in present:
+                    subs.append((p, cand, "Holonet banner fallback"))
+                    break
+            if p in [s[0] for s in subs]: continue
+
+        # 11. Episode UI backgrounds & HUD icons
+        if fn.startswith(("episode_", "epsiode_")):
+            if "hudbg" in fn and "assetbundles/android/episode_hudbg_epspacebear1.assetbundle" in present:
+                subs.append((p, "assetbundles/android/episode_hudbg_epspacebear1.assetbundle", "Episode HUD bg fallback"))
+                continue
+            if "_bg" in fn and "assetbundles/android/episode_epspacebear1_bg.assetbundle" in present:
+                subs.append((p, "assetbundles/android/episode_epspacebear1_bg.assetbundle", "Episode bg fallback"))
+                continue
+            for pres_p in sorted(present):
+                if os.path.basename(pres_p).startswith("episode_hudicon_") or os.path.basename(pres_p).startswith("epsiode_hudicon_"):
+                    subs.append((p, pres_p, "Episode icon fallback"))
+                    break
+            if p in [s[0] for s in subs]: continue
+
+        # 12. Perk, SquadWars, Store, HUD & unit icons
+        icon_fallbacks = [
+            ("perk_", "perk_"),
+            ("squadwars_", "squadwars_info_images.assetbundle"),
+            ("storeicon_", "storeicon_crystal_badge.assetbundle"),
+            ("hudicon_", "hudicon_crate_starship.assetbundle"),
+            ("ico_", "ico_prestige_droid.assetbundle"),
+            ("icon_", "icon_atmosmig_emp.assetbundle"),
+        ]
+        matched_icon = False
+        for pref, cand_name in icon_fallbacks:
+            if fn.startswith(pref):
+                if cand_name.endswith(".assetbundle") and f"assetbundles/android/{cand_name}" in present:
+                    subs.append((p, f"assetbundles/android/{cand_name}", f"UI icon fallback ({pref})"))
+                    matched_icon = True
+                    break
+                for pres_p in sorted(present):
+                    if os.path.basename(pres_p).startswith(cand_name):
+                        subs.append((p, pres_p, f"UI icon fallback ({pref})"))
+                        matched_icon = True
+                        break
+                if matched_icon:
+                    break
+        if matched_icon:
+            continue
+
+        # 13. FX fallback
+        if fn.startswith("fx_") and "assetbundles/android/fx_aura.assetbundle" in present:
+            subs.append((p, "assetbundles/android/fx_aura.assetbundle", "VFX fallback"))
+            continue
+
     return subs
 
 
