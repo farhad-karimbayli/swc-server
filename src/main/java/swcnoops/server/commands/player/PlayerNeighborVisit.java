@@ -12,18 +12,17 @@ public class PlayerNeighborVisit extends AbstractCommandAction<PlayerNeighborVis
 
     @Override
     protected PlayerNeighborVisitResult execute(PlayerNeighborVisit arguments, long time) throws Exception {
-        // TODO - change this to read straight from DB
         swcnoops.server.datasource.Player player = ServiceFactory.instance().getPlayerDatasource()
                 .loadPlayer(arguments.getNeighborId(), true,
                         "playerSettings.baseMap", "playerSettings.faction", "playerSettings.inventoryStorage",
-                        "playerSettings.guildId", "playerSettings.guildName", "playerSettings.scalars");
+                        "playerSettings.guildId", "playerSettings.guildName", "playerSettings.scalars",
+                        "playerSettings.upgrades", "playerSettings.activeArmory");
 
         PlayerNeighborVisitResult playerNeighborVisitResult = new PlayerNeighborVisitResult();
         if (player != null) {
             playerNeighborVisitResult.player = new Player();
             playerNeighborVisitResult.player.name = player.getPlayerSettings().getName();
 
-            // TODO - to finish and populate other things
             playerNeighborVisitResult.player.scalars = player.getPlayerSettings().getScalars();
             playerNeighborVisitResult.player.playerModel = new PlayerModel();
             playerNeighborVisitResult.player.playerModel.faction = player.getPlayerSettings().getFaction();
@@ -39,7 +38,9 @@ public class PlayerNeighborVisit extends AbstractCommandAction<PlayerNeighborVis
                 playerNeighborVisitResult.player.playerModel.guildInfo.guildName = player.getPlayerSettings().getGuildName();
             }
 
-            playerNeighborVisitResult.player.playerModel.upgrades = new Upgrades();
+            playerNeighborVisitResult.player.playerModel.upgrades = player.getPlayerSettings().getUpgrades() != null
+                    ? player.getPlayerSettings().getUpgrades() : new Upgrades();
+            playerNeighborVisitResult.player.playerModel.activeArmory = player.getPlayerSettings().getActiveArmory();
         }
 
         return playerNeighborVisitResult;

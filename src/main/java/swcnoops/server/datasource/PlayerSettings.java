@@ -35,6 +35,12 @@ public class PlayerSettings {
     private Map<String, Long> raidLogs = new HashMap<>();
     private long protectedUntil;
     private Map<String, ObjectiveGroup> playerObjectives = new HashMap<>();
+    private PlayerCrates crates = new PlayerCrates();
+    private Map<String, Integer> shards = new HashMap<>();
+    private ActiveArmory activeArmory = new ActiveArmory();
+    private ShardShopData shardShopData;
+    private EpisodeProgressInfo episodeProgressInfo;
+    private List<String> redeemedTournaments = new ArrayList<>();
 
     public PlayerSettings() {
     }
@@ -241,5 +247,65 @@ public class PlayerSettings {
 
     public void setPlayerObjectives(Map<String, ObjectiveGroup> playerObjectives) {
         this.playerObjectives = playerObjectives;
+    }
+
+    public PlayerCrates getCrates() {
+        if (this.crates == null) {
+            this.crates = new PlayerCrates();
+        }
+        return crates;
+    }
+
+    public void setCrates(PlayerCrates crates) {
+        this.crates = crates;
+    }
+
+    public Map<String, Integer> getShards() {
+        if (this.shards == null) {
+            this.shards = new HashMap<>();
+        }
+        return shards;
+    }
+
+    public void setShards(Map<String, Integer> shards) {
+        this.shards = shards;
+    }
+
+    public ActiveArmory getActiveArmory() {
+        if (this.activeArmory == null) {
+            this.activeArmory = new ActiveArmory();
+        }
+        return activeArmory;
+    }
+
+    public void setActiveArmory(ActiveArmory activeArmory) {
+        this.activeArmory = activeArmory;
+    }
+
+    public ShardShopData getShardShopData() {
+        return shardShopData;
+    }
+
+    public void setShardShopData(ShardShopData shardShopData) {
+        this.shardShopData = shardShopData;
+    }
+
+    public EpisodeProgressInfo getEpisodeProgressInfo() {
+        return episodeProgressInfo;
+    }
+
+    public void setEpisodeProgressInfo(EpisodeProgressInfo episodeProgressInfo) {
+        this.episodeProgressInfo = episodeProgressInfo;
+    }
+
+    public List<String> getRedeemedTournaments() {
+        if (this.redeemedTournaments == null) {
+            this.redeemedTournaments = new ArrayList<>();
+        }
+        return redeemedTournaments;
+    }
+
+    public void setRedeemedTournaments(List<String> redeemedTournaments) {
+        this.redeemedTournaments = redeemedTournaments;
     }
 }

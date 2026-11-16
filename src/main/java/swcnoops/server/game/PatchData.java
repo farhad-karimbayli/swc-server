@@ -18,6 +18,22 @@ public class PatchData {
         merge((List<JoeData>)(List<?>)joeObjects.getRaidMissionPool());
         merge((List<JoeData>)(List<?>)joeObjects.getObjSeries());
         merge((List<JoeData>)(List<?>)joeObjects.getObjTable());
+        merge((List<JoeData>)(List<?>)joeObjects.getCrate());
+        merge((List<JoeData>)(List<?>)joeObjects.getCrateSupply());
+        merge((List<JoeData>)(List<?>)joeObjects.getCrateSupplyPool());
+        merge((List<JoeData>)(List<?>)joeObjects.getCrateSupplyScale());
+        merge((List<JoeData>)(List<?>)joeObjects.getShardShopSeries());
+        merge((List<JoeData>)(List<?>)joeObjects.getShardShopPool());
+        merge((List<JoeData>)(List<?>)joeObjects.getCost());
+        merge((List<JoeData>)(List<?>)joeObjects.getEquipmentData());
+        merge((List<JoeData>)(List<?>)joeObjects.getCommandCenterEntries());
+        merge((List<JoeData>)(List<?>)joeObjects.getTransmissions());
+        merge((List<JoeData>)(List<?>)joeObjects.getLimitedEditionItemData());
+        merge((List<JoeData>)(List<?>)joeObjects.getPerks());
+        merge((List<JoeData>)(List<?>)joeObjects.getSquadLevel());
+        merge((List<JoeData>)(List<?>)joeObjects.getEpisodeData());
+        merge((List<JoeData>)(List<?>)joeObjects.getEpisodeTask());
+        merge((List<JoeData>)(List<?>)joeObjects.getWarBuffData());
     }
 
     private void merge(List<JoeData> patchDatum) throws Exception {

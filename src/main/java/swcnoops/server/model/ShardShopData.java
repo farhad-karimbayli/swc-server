@@ -1,12 +1,15 @@
 package swcnoops.server.model;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class ShardShopData {
-//    public long offerExpiration=1578009606;
-//    public long offsetMinutes=0;
-    public String pool_0;
-    public String pool_1;
-    public String pool_2;
-    public String pool_3;
-    public String pool_4;
+    public long offerExpiration;
+    public long offsetMinutes;
+    public Map<String, Integer> pool_0 = new HashMap<>();
+    public Map<String, Integer> pool_1 = new HashMap<>();
+    public Map<String, Integer> pool_2 = new HashMap<>();
+    public Map<String, Integer> pool_3 = new HashMap<>();
+    public Map<String, Integer> pool_4 = new HashMap<>();
     public String seriesId;
 }

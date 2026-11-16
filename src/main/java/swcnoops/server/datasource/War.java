@@ -1,6 +1,10 @@
 package swcnoops.server.datasource;
 
 import org.mongojack.Id;
+import swcnoops.server.model.BuffBase;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class War {
     @Id
@@ -15,6 +19,7 @@ public class War {
     private long processedEndTime;
     private int squadAScore;
     private int squadBScore;
+    private Map<String, BuffBase> buffBases = new HashMap<>();
 
     public War() {
     }
@@ -121,5 +126,25 @@ public class War {
 
     public void setSquadBScore(int squadBScore) {
         this.squadBScore = squadBScore;
+    }
+
+    public Map<String, BuffBase> getBuffBases() {
+        if (this.buffBases == null || this.buffBases.isEmpty()) {
+            if (this.buffBases == null) {
+                this.buffBases = new HashMap<>();
+            }
+            for (String uid : new String[]{"warBuff2", "warBuff5", "warBuff6"}) {
+                BuffBase buffBase = new BuffBase();
+                buffBase.buffUid = uid;
+                buffBase.level = 1;
+                buffBase.battleInProgress = false;
+                this.buffBases.put(uid, buffBase);
+            }
+        }
+        return buffBases;
+    }
+
+    public void setBuffBases(Map<String, BuffBase> buffBases) {
+        this.buffBases = buffBases;
     }
 }

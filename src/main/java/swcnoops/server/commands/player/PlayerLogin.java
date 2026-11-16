@@ -141,10 +141,21 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
         playerLoginResponse.scalars = playerSession.getScalarsManager().getObjectForReading();
         playerLoginResponse.playerModel.battleLogs = ServiceFactory.instance().getPlayerDatasource().getPlayerBattleLogs(playerSession.getPlayerId());
         playerLoginResponse.playerModel.DamagedBuildings = mapDamagedBuildings(playerSession);
-        playerLoginResponse.playerModel.tournaments = mapTournaments(playerSession);
+        playerLoginResponse.playerModel.tournaments = mapTournaments(playerSession, time);
         playerLoginResponse.playerModel.timeZoneOffset = playerSession.getPlayerSettings().getTimeZoneOffset();
         playerLoginResponse.currentlyDefending = mapCurrentlyDefending(playerSession);
         playerLoginResponse.playerModel.playerObjectives = mapObjectives(playerSession, time);
+        playerLoginResponse.playerModel.activeArmory = playerSession.getPlayerSettings().getActiveArmory();
+        playerLoginResponse.playerModel.shardShopData = PlayerStoreShardOffersGet.ensureShardShopData(playerSession, time, false);
+        playerLoginResponse.playerModel.episodeProgressInfo = playerSession.getPlayerSettings().getEpisodeProgressInfo() != null
+                ? playerSession.getPlayerSettings().getEpisodeProgressInfo()
+                : PlayerEpisodesProgressGet.ensureEpisodeProgress(playerSession, time, false);
+        if (playerSession.getGuildSession() != null) {
+            Squad squad = playerSession.getGuildSession().getSquadManager().getObjectForReading();
+            if (squad != null && squad.perks != null) {
+                playerLoginResponse.playerModel.perksInfo = squad.perks;
+            }
+        }
 
         mapProtection(playerLoginResponse.playerModel, playerSession, time);
     }
@@ -223,7 +234,7 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
         }
     }
 
-    private Map<String, Tournament> mapTournaments(PlayerSession playerSession) {
+    private Map<String, Tournament> mapTournaments(PlayerSession playerSession, long time) {
         Map<String, Tournament> tournaments = null;
 
         List<TournamentStat> tournamentStats = playerSession.getPlayerSettings().getTournaments();
@@ -236,12 +247,15 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
                 tournament.bestTier = 1;
                 tournament.rating = tournamentStat.value;
                 tournament.redeemedRewards = null;
-                tournament.collected = false;
+                tournament.collected = playerSession.getPlayerSettings().getRedeemedTournaments().contains(tournamentStat.uid);
 
-                // TODO - when conflict finishes
-                tournament.finalRank = new TournamentRank();
-                tournament.finalRank.percentile = 2;
-                tournament.finalRank.tier = null;
+                TournamentData tData = ServiceFactory.instance().getGameDataManager()
+                        .getConflictManager().getTournament(tournamentStat.uid);
+                if (tData != null && tData.hasExpired(time)) {
+                    tournament.finalRank = new TournamentRank();
+                    tournament.finalRank.percentile = tournamentStat.percentile != null ? tournamentStat.percentile : 2;
+                    tournament.finalRank.tier = null;
+                }
                 
                 tournaments.put(tournamentStat.uid, tournament);
             }
@@ -268,7 +282,20 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
     }
 
     private void mapUnlockedPlanets(PlayerLoginCommandResult playerLoginResponse, PlayerSettings playerSettings) {
-        playerLoginResponse.playerModel.unlockedPlanets = playerSettings.getUnlockedPlanets();
+        UnlockedPlanets planets = playerSettings.getUnlockedPlanets();
+        if (planets == null) {
+            planets = new UnlockedPlanets();
+            playerSettings.setUnlockedPlanets(planets);
+        }
+        String quest = playerSettings.getCurrentQuest();
+        if (quest == null || quest.isEmpty()) {
+            for (String p : new String[]{"planet1", "planet3", "planet6", "planet8", "planet21", "planet23"}) {
+                if (!planets.contains(p)) {
+                    planets.add(p);
+                }
+            }
+        }
+        playerLoginResponse.playerModel.unlockedPlanets = planets;
     }
 
     private void mapGuild(PlayerModel playerModel, PlayerSession playerSession) {
@@ -550,8 +577,9 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
                 playerModel.upgrades.specialAttack.put(a.getUnitId(), a.getLevel());
         });
 
-        // TODO - samples
+        playerModel.upgrades.equipment = new HashMap<>(playerSettings.getUpgrades().equipment);
         playerModel.prizes = new Upgrades();
+        playerModel.prizes.crates = playerSettings.getCrates();
     }
 
     private Map<String, Integer> map(HashMap<String, TroopRecord> troops) {
@@ -562,11 +590,13 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
     }
 
     private void mapShards(PlayerModel playerModel, PlayerSession playerSession) {
-        playerModel.shards.clear();
+        Map<String, Integer> storedShards = playerSession.getPlayerSettings().getShards();
         List<TroopData> troopsForFaction = new LinkedList<>(ServiceFactory.instance().getGameDataManager()
                 .getLowestLevelTroopsForFaction(playerSession.getFaction()));
         troopsForFaction.removeIf(a -> a.getUpgradeShardUid() == null);
-        troopsForFaction.forEach(a -> playerModel.shards.put(a.getUpgradeShardUid(), Integer.valueOf(1000)));
+        troopsForFaction.forEach(a -> storedShards.putIfAbsent(a.getUpgradeShardUid(), Integer.valueOf(1000)));
+        playerModel.shards.clear();
+        playerModel.shards.putAll(storedShards);
     }
 
     @Override

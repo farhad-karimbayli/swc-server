@@ -3,10 +3,13 @@ package swcnoops.server.game;
 import org.junit.Test;
 import swcnoops.server.Config;
 import swcnoops.server.ServiceFactory;
+import swcnoops.server.model.FactionType;
+import swcnoops.server.model.ObjectiveGroup;
+import swcnoops.server.model.UnlockedPlanets;
 
-import java.sql.Timestamp;
+import java.util.Map;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class GameDataManagerImplTest {
     static {
@@ -43,5 +46,28 @@ public class GameDataManagerImplTest {
         troopData = gameDataManager.getTroopDataByUid("troopHeroATAT1");
         assertNotNull(troopData);
         assertNotNull(troopData.getUnitId());
+
+        // Verify newly extracted game patches are loaded
+        PatchData patchData = gameDataManager.getPatchData();
+        assertFalse(patchData.getMap(CrateItemData.class).isEmpty());
+        assertFalse(patchData.getMap(CrateSupplyData.class).isEmpty());
+        assertFalse(patchData.getMap(ShardShopSeriesData.class).isEmpty());
+        assertFalse(patchData.getMap(EquipmentData.class).isEmpty());
+        assertFalse(patchData.getMap(CommandCenterEntryData.class).isEmpty());
+        assertFalse(patchData.getMap(TransmissionData.class).isEmpty());
+        assertFalse(patchData.getMap(PerkData.class).isEmpty());
+        assertFalse(patchData.getMap(EpisodeData.class).isEmpty());
+        assertFalse(patchData.getMap(WarBuffData.class).isEmpty());
+
+        // Verify live planetary conflicts and daily objectives are active
+        assertNotNull(gameDataManager.getConflictManager().getConflict("planet1"));
+        assertNotNull(gameDataManager.getConflictManager().getConflict("planet3"));
+        UnlockedPlanets planets = new UnlockedPlanets();
+        planets.add("planet1");
+        Map<String, ObjectiveGroup> objectives = gameDataManager.getObjectiveManager()
+                .getObjectiveGroups(null, planets, null, FactionType.empire, 11, 0f);
+        assertNotNull(objectives);
+        assertTrue(objectives.containsKey("planet1"));
+        assertEquals(3, objectives.get("planet1").progress.size());
     }
 }

@@ -1335,7 +1335,8 @@ public class PlayerDatasourceImpl implements PlayerDataSource {
                             set("actionGraceStartTime", war.getActionGraceStartTime()),
                             set("actionEndTime", war.getActionEndTime()),
                             set("cooldownEndTime", war.getCooldownEndTime()),
-                            set("processedEndTime", war.getProcessedEndTime())));
+                            set("processedEndTime", war.getProcessedEndTime()),
+                            set("buffBases", war.getBuffBases())));
             session.commitTransaction();
         }
     }
@@ -2027,10 +2028,102 @@ public class PlayerDatasourceImpl implements PlayerDataSource {
                 TournamentStat tournamentStat = iterator.next();
                 if (tournamentStat.guildId != null) {
                     SquadInfo squadInfo = squadInfoMap.get(tournamentStat.guildId);
-                    tournamentStat.guildName = squadInfo.name;
-                    tournamentStat.icon = squadInfo.icon;
+                    if (squadInfo != null) {
+                        tournamentStat.guildName = squadInfo.name;
+                        tournamentStat.icon = squadInfo.icon;
+                    }
                 }
             }
         }
+    }
+
+    @Override
+    public void saveSquadPerks(GuildSession guildSession, Squad squad) {
+        if (squad == null || squad._id == null) {
+            return;
+        }
+        try {
+            this.squadCollection.updateOne(eq("_id", squad._id),
+                    combine(set("perks", squad.perks),
+                            set("level", squad.level),
+                            set("rep", squad.rep)));
+        } finally {
+            if (guildSession != null) {
+                guildSession.getSquadManager().setDirty();
+            }
+        }
+    }
+
+    @Override
+    public List<Player> getPlayerLeaderboard(String planetUid, int limit) {
+        Bson filter = (planetUid != null && !planetUid.isEmpty())
+                ? eq("playerSettings.baseMap.planet", planetUid)
+                : new Document();
+        List<Player> players = new ArrayList<>();
+        FindIterable<Player> iterable = this.playerCollection.find(filter)
+                .projection(include("_id", "playerSettings.name", "playerSettings.faction",
+                        "playerSettings.guildId", "playerSettings.guildName",
+                        "playerSettings.baseMap.planet", "playerSettings.scalars"))
+                .sort(Sorts.descending("playerSettings.scalars.attackRating"))
+                .limit(limit);
+        try (MongoCursor<Player> cursor = iterable.cursor()) {
+            while (cursor.hasNext()) {
+                players.add(cursor.next());
+            }
+        }
+        return players;
+    }
+
+    @Override
+    public List<Player> getPlayersByIds(List<String> playerIds) {
+        List<Player> players = new ArrayList<>();
+        if (playerIds == null || playerIds.isEmpty()) {
+            return players;
+        }
+        FindIterable<Player> iterable = this.playerCollection.find(in("_id", playerIds))
+                .projection(include("_id", "playerSettings.name", "playerSettings.faction",
+                        "playerSettings.guildId", "playerSettings.guildName",
+                        "playerSettings.baseMap.planet", "playerSettings.scalars"))
+                .sort(Sorts.descending("playerSettings.scalars.attackRating"));
+        try (MongoCursor<Player> cursor = iterable.cursor()) {
+            while (cursor.hasNext()) {
+                players.add(cursor.next());
+            }
+        }
+        return players;
+    }
+
+    @Override
+    public List<SquadInfo> getSquadLeaderboard(int limit) {
+        List<SquadInfo> squads = new ArrayList<>();
+        FindIterable<SquadInfo> iterable = this.squadCollection.find()
+                .projection(include("_id", "name", "faction", "icon", "level", "score", "openEnrollment", "squadMembers"))
+                .sort(Sorts.descending("score", "level"))
+                .limit(limit);
+        try (MongoCursor<SquadInfo> cursor = iterable.cursor()) {
+            while (cursor.hasNext()) {
+                squads.add(cursor.next());
+            }
+        }
+        return squads;
+    }
+
+    @Override
+    public Map<String, Integer> getPlanetPopulationStats() {
+        Map<String, Integer> stats = new LinkedHashMap<>();
+        FindIterable<Player> iterable = this.playerCollection.find()
+                .projection(include("playerSettings.baseMap.planet"));
+        try (MongoCursor<Player> cursor = iterable.cursor()) {
+            while (cursor.hasNext()) {
+                Player p = cursor.next();
+                if (p.getPlayerSettings() != null && p.getPlayerSettings().getBaseMap() != null) {
+                    String planet = p.getPlayerSettings().getBaseMap().planet;
+                    if (planet != null && !planet.isEmpty()) {
+                        stats.put(planet, stats.getOrDefault(planet, 0) + 1);
+                    }
+                }
+            }
+        }
+        return stats;
     }
 }

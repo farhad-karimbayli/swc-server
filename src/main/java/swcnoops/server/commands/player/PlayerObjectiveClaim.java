@@ -29,6 +29,7 @@ public class PlayerObjectiveClaim extends AbstractCommandAction<PlayerObjectiveC
                 playerSession.getPlayerObjectivesManager().getObjectForReading().get(arguments.getPlanetId());
 
         ObjectiveProgress progress = getProgress(group, arguments.getObjectiveId());
+        CrateDataResult result = new CrateDataResult();
         if (progress != null && !progress.claimAttempt) {
             if (progress.state != ObjectiveState.complete) {
                 LOG.warn("Player is claiming an incomplete objective, which has " + progress.count + " for target "
@@ -38,11 +39,15 @@ public class PlayerObjectiveClaim extends AbstractCommandAction<PlayerObjectiveC
             progress.claimAttempt = true;
             progress.state = ObjectiveState.rewarded;
             playerSession.getPlayerObjectivesManager().getObjectForWriting();
+
+            long now = time > 0 ? time : ServiceFactory.getSystemTimeSecondsFromEpoch();
+            swcnoops.server.model.CrateData crate = swcnoops.server.game.CrateService.createAndStoreCrate(
+                    playerSession, "lc_daily", "objective", arguments.getPlanetId(), now);
+            result.setCrateData(crate);
             playerSession.savePlayerKeepAlive();
         }
 
-        // TODO - do the reward
-        return new CrateDataResult();
+        return result;
     }
 
     private ObjectiveProgress getProgress(ObjectiveGroup group, String objectiveId) {

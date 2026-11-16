@@ -55,6 +55,22 @@ public class BatchProcessorTest {
         assertNotNull(campaignSet.getCampaignMissionSet(1));
         assertNull(campaignSet.getCampaignMissionSet(0));
         assertNull(campaignSet.getCampaignMissionSet(2));
+
+        // Verify newly wired commands decode cleanly in BatchProcessor
+        String newCommandsBatch = "{\"authKey\":\"\",\"pickupMessages\":true,\"lastLoginTime\":0,\"commands\":["
+                + "{\"action\":\"player.crate.open\",\"args\":{},\"requestId\":1,\"time\":0,\"token\":\"t1\"},"
+                + "{\"action\":\"player.store.shard.offers.buy\",\"args\":{},\"requestId\":2,\"time\":0,\"token\":\"t2\"},"
+                + "{\"action\":\"player.equipment.activate\",\"args\":{},\"requestId\":3,\"time\":0,\"token\":\"t3\"},"
+                + "{\"action\":\"player.equipment.deactivate\",\"args\":{},\"requestId\":4,\"time\":0,\"token\":\"t4\"},"
+                + "{\"action\":\"player.equipment.upgrade.start\",\"args\":{},\"requestId\":5,\"time\":0,\"token\":\"t5\"},"
+                + "{\"action\":\"player.episodes.tasks.claim\",\"args\":{},\"requestId\":6,\"time\":0,\"token\":\"t6\"},"
+                + "{\"action\":\"player.perks.activate\",\"args\":{},\"requestId\":7,\"time\":0,\"token\":\"t7\"},"
+                + "{\"action\":\"player.holonet.claimReward\",\"args\":{},\"requestId\":8,\"time\":0,\"token\":\"t8\"},"
+                + "{\"action\":\"player.planet.stats\",\"args\":{},\"requestId\":9,\"time\":0,\"token\":\"t9\"}"
+                + "]}";
+        Batch decodedNew = batchProcessor.decode(newCommandsBatch);
+        batchProcessor.decodeCommands(decodedNew);
+        decodedNew.getCommands().forEach(c -> assertNotNull("Missing handler for " + c.getAction(), c.getCommandAction()));
     }
 
     @Test

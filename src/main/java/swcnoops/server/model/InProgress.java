@@ -1,4 +1,6 @@
 package swcnoops.server.model;
 
-public class InProgress {
+import java.util.HashMap;
+
+public class InProgress extends HashMap<String, CrateData> {
 }

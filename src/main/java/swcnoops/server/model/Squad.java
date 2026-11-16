@@ -14,7 +14,9 @@ public class Squad {
     public boolean openEnrollment;
     public int members;
     public int activeMemberCount;
-    public int level;
+    public int level = 1;
+    public int rep;
+    public Perks perks = new Perks();
     public Long warSignUpTime;
     public String warId;
     public String description;

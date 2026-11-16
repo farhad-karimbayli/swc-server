@@ -1,5 +1,6 @@
 package swcnoops.server.model;
 
-public class Available {
+import java.util.HashMap;
 
+public class Available extends HashMap<String, CrateData> {
 }

@@ -25,7 +25,7 @@ cdnRoots=http://127.0.0.1:8080/swcFiles/
 troopJson=patches/manifest45/trp.json
 baseJson=patches/manifest45/base.json
 caeJson=patches/manifest45/cae.json
-coreJsonPatches=base.json;cae.json;trp.json
+coreJsonPatches=base.json;cae.json;trp.json;olc.json;holo.json;prk.json;epi.json;war.json
 
 # Dev bases for PvP matching and free resources
 loadDevBases=true

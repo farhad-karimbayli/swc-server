@@ -125,6 +125,7 @@ public class CommandFactory {
         this.add(new PlayerPlanetRelocate());
 
         this.add(new PlayerStoreCrateBuy());
+        this.add(new PlayerCrateOpen());
         this.add(new PlayerCrateAward());
 
         this.add(new PlayerNeighborVisit());
@@ -133,26 +134,32 @@ public class CommandFactory {
         this.add(new PlayerLeaderboardTournamentGetRank());
         this.add(new PlayerStoreTournamentRedeem());
 
-        // TODO - this command looks like it will bring up some sort of dialog on the client related to CommandCenterVO
         this.add(new PlayerHolonetGetCommandCenterEntry());
+        this.add(new PlayerHolonetGetEventMessage());
+        this.add(new PlayerHolonetClaimReward());
 
-        // TODO - this command looks like it will give an update on war etc.. related to TransmissionVO
-        this.add(new OkListCommandAction("player.holonet.getEventMessage"));
+        this.add(new PlayerPlanetStats());
 
-        // TODO - planet population stats maybe
-        this.add(new OkCommandAction("player.planet.stats"));
+        this.add(new PlayerEquipmentActivate());
+        this.add(new PlayerEquipmentDeactivate());
+        this.add(new PlayerEquipmentUpgradeStart());
 
-//        this.add(new OkCommandAction("player.missions.showIntro"));
-//        this.add(new OkCommandAction("player.missions.startSpecop"));
-//        this.add(new OkCommandAction("player.building.move"));
+        this.add(new PlayerEpisodesTaskAction("player.episodes.tasks.intro.viewed"));
+        this.add(new PlayerEpisodesTaskAction("player.episodes.tasks.timegate.start"));
+        this.add(new PlayerEpisodesTaskAction("player.episodes.tasks.timegate.skip"));
+        this.add(new PlayerEpisodesTaskAction("player.episodes.tasks.progress.complete"));
+        this.add(new PlayerEpisodesTaskAction("player.episodes.tasks.progress.skip"));
+        this.add(new PlayerEpisodesTaskAction("player.episodes.tasks.claim"));
 
         this.add(new PlayerRaidsUpdate());
         this.add(new PlayerRaidsStart());
         this.add(new PlayerRaidsComplete());
 
-        // works but needs full support
-        this.add(new OkCommandAction("player.perks.activate"));
-        this.add(new OkCommandAction("player.store.shard.offers.buy"));
+        this.add(new PlayerPerksAction("player.perks.activate"));
+        this.add(new PlayerPerksAction("player.perks.cancel"));
+        this.add(new PlayerPerksAction("player.perks.invest"));
+        this.add(new PlayerPerksAction("player.perks.skipCooldown"));
+        this.add(new PlayerStoreShardOffersBuy());
     }
 
     private void add(CommandAction commandAction) {

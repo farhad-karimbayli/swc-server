@@ -79,6 +79,39 @@ public class JoeFile {
         @JsonProperty("ObjTable")
         private List<ObjTableData> objTable;
 
+        @JsonProperty("Crate")
+        private List<CrateItemData> crate;
+        @JsonProperty("CrateSupply")
+        private List<CrateSupplyData> crateSupply;
+        @JsonProperty("CrateSupplyPool")
+        private List<CrateSupplyPoolData> crateSupplyPool;
+        @JsonProperty("CrateSupplyScale")
+        private List<CrateSupplyScaleData> crateSupplyScale;
+        @JsonProperty("ShardShopSeries")
+        private List<ShardShopSeriesData> shardShopSeries;
+        @JsonProperty("ShardShopPool")
+        private List<ShardShopPoolData> shardShopPool;
+        @JsonProperty("Cost")
+        private List<CostData> cost;
+        @JsonProperty("EquipmentData")
+        private List<EquipmentData> equipmentData;
+        @JsonProperty("CommandCenterEntries")
+        private List<CommandCenterEntryData> commandCenterEntries;
+        @JsonProperty("Transmissions")
+        private List<TransmissionData> transmissions;
+        @JsonProperty("LimitedEditionItemData")
+        private List<LimitedEditionItemData> limitedEditionItemData;
+        @JsonProperty("Perks")
+        private List<PerkData> perks;
+        @JsonProperty("SquadLevel")
+        private List<SquadLevelData> squadLevel;
+        @JsonProperty("EpisodeData")
+        private List<EpisodeData> episodeData;
+        @JsonProperty("EpisodeTask")
+        private List<EpisodeTaskData> episodeTask;
+        @JsonProperty("WarBuffData")
+        private List<WarBuffData> warBuffData;
+
         public List<CampaignData> getCampaignData() {
             return campaignData;
         }
@@ -142,5 +175,38 @@ public class JoeFile {
         public void setObjTable(List<ObjTableData> objTable) {
             this.objTable = objTable;
         }
+
+        public List<CrateItemData> getCrate() { return crate; }
+        public void setCrate(List<CrateItemData> crate) { this.crate = crate; }
+        public List<CrateSupplyData> getCrateSupply() { return crateSupply; }
+        public void setCrateSupply(List<CrateSupplyData> crateSupply) { this.crateSupply = crateSupply; }
+        public List<CrateSupplyPoolData> getCrateSupplyPool() { return crateSupplyPool; }
+        public void setCrateSupplyPool(List<CrateSupplyPoolData> crateSupplyPool) { this.crateSupplyPool = crateSupplyPool; }
+        public List<CrateSupplyScaleData> getCrateSupplyScale() { return crateSupplyScale; }
+        public void setCrateSupplyScale(List<CrateSupplyScaleData> crateSupplyScale) { this.crateSupplyScale = crateSupplyScale; }
+        public List<ShardShopSeriesData> getShardShopSeries() { return shardShopSeries; }
+        public void setShardShopSeries(List<ShardShopSeriesData> shardShopSeries) { this.shardShopSeries = shardShopSeries; }
+        public List<ShardShopPoolData> getShardShopPool() { return shardShopPool; }
+        public void setShardShopPool(List<ShardShopPoolData> shardShopPool) { this.shardShopPool = shardShopPool; }
+        public List<CostData> getCost() { return cost; }
+        public void setCost(List<CostData> cost) { this.cost = cost; }
+        public List<EquipmentData> getEquipmentData() { return equipmentData; }
+        public void setEquipmentData(List<EquipmentData> equipmentData) { this.equipmentData = equipmentData; }
+        public List<CommandCenterEntryData> getCommandCenterEntries() { return commandCenterEntries; }
+        public void setCommandCenterEntries(List<CommandCenterEntryData> commandCenterEntries) { this.commandCenterEntries = commandCenterEntries; }
+        public List<TransmissionData> getTransmissions() { return transmissions; }
+        public void setTransmissions(List<TransmissionData> transmissions) { this.transmissions = transmissions; }
+        public List<LimitedEditionItemData> getLimitedEditionItemData() { return limitedEditionItemData; }
+        public void setLimitedEditionItemData(List<LimitedEditionItemData> limitedEditionItemData) { this.limitedEditionItemData = limitedEditionItemData; }
+        public List<PerkData> getPerks() { return perks; }
+        public void setPerks(List<PerkData> perks) { this.perks = perks; }
+        public List<SquadLevelData> getSquadLevel() { return squadLevel; }
+        public void setSquadLevel(List<SquadLevelData> squadLevel) { this.squadLevel = squadLevel; }
+        public List<EpisodeData> getEpisodeData() { return episodeData; }
+        public void setEpisodeData(List<EpisodeData> episodeData) { this.episodeData = episodeData; }
+        public List<EpisodeTaskData> getEpisodeTask() { return episodeTask; }
+        public void setEpisodeTask(List<EpisodeTaskData> episodeTask) { this.episodeTask = episodeTask; }
+        public List<WarBuffData> getWarBuffData() { return warBuffData; }
+        public void setWarBuffData(List<WarBuffData> warBuffData) { this.warBuffData = warBuffData; }
     }
 }

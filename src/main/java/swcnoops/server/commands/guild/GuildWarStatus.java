@@ -42,10 +42,7 @@ public class GuildWarStatus extends AbstractCommandAction<GuildWarStatus, GuildW
         patchWarParticipants(guildWarStatusResponse);
 
         // buff bases can not be null otherwise client crashes
-        guildWarStatusResponse.buffBases = new ArrayList<>();
-        guildWarStatusResponse.buffBases.add(create("warBuff2"));
-        guildWarStatusResponse.buffBases.add(create("warBuff5"));
-        guildWarStatusResponse.buffBases.add(create("warBuff6"));
+        guildWarStatusResponse.buffBases = new ArrayList<>(war.getBuffBases().values());
 
         // if war has finished then must set this to true otherwise squad can not start war
         if (ServiceFactory.getSystemTimeSecondsFromEpoch() >= war.getActionEndTime())

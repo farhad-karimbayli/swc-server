@@ -161,19 +161,18 @@ public class ObjectiveManagerImpl implements ObjectiveManager {
     }
 
     private List<ObjectiveGroup> removeExpiredObjectives(Map<String, ObjectiveGroup> existingObjectives) {
+        if (existingObjectives == null || existingObjectives.isEmpty()) {
+            return Collections.emptyList();
+        }
         List<ObjectiveGroup> removed = new ArrayList<>(existingObjectives.size());
-
-        if (existingObjectives != null) {
-            long now = ServiceFactory.getSystemTimeSecondsFromEpoch();
-            for (String planet : new ArrayList<>(existingObjectives.keySet())) {
-                ObjectiveGroup objectiveGroup = existingObjectives.get(planet);
-                if (objectiveGroup.endTime < now) {
-                    existingObjectives.remove(planet);
-                    removed.add(objectiveGroup);
-                }
+        long now = ServiceFactory.getSystemTimeSecondsFromEpoch();
+        for (String planet : new ArrayList<>(existingObjectives.keySet())) {
+            ObjectiveGroup objectiveGroup = existingObjectives.get(planet);
+            if (objectiveGroup.endTime < now) {
+                existingObjectives.remove(planet);
+                removed.add(objectiveGroup);
             }
         }
-
         return removed;
     }
 
@@ -336,14 +335,22 @@ public class ObjectiveManagerImpl implements ObjectiveManager {
 
     private Map<String, ObjSeriesData> getActiveObjSeries(Collection<ObjSeriesData> values) {
         Map<String, ObjSeriesData> map = new HashMap<>();
+        Map<String, ObjSeriesData> fallback = new HashMap<>();
         long time = ServiceFactory.getSystemTimeSecondsFromEpoch();
         for (ObjSeriesData data : values) {
+            if (data.getPlanetUid() != null) {
+                ObjSeriesData prev = fallback.get(data.getPlanetUid());
+                if (prev == null || (data.getUid() != null && data.getUid().endsWith("_series22"))
+                        || data.getEndTime() > prev.getEndTime()) {
+                    fallback.put(data.getPlanetUid(), data);
+                }
+            }
             if (isActive(data, time)) {
                 map.put(data.getPlanetUid(), data);
             }
         }
 
-        return map;
+        return map.isEmpty() ? fallback : map;
     }
 
     private boolean isActive(ObjSeriesData data, long time) {

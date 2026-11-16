@@ -53,7 +53,7 @@ public class Config {
     public String mongoDBName = "swc";
 
     public int manifestVersion = 2045;
-    public String coreJsonPatches = "base.json;cae.json;trp.json";
+    public String coreJsonPatches = "base.json;cae.json;trp.json;olc.json;holo.json;prk.json;epi.json;war.json";
     private int manifestVersionToUse;
     static final public String manifestFileTemplate = "manifests/__manifest_zyngaswc_prod.";
 

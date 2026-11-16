@@ -126,4 +126,14 @@ public interface PlayerDataSource {
     TournamentLeaderBoard getTournamentLeaderBoard(String uid, String playerId);
 
     TournamentStat getTournamentPlayerRank(String uid, String playerId);
+
+    void saveSquadPerks(GuildSession guildSession, Squad squad);
+
+    List<Player> getPlayerLeaderboard(String planetUid, int limit);
+
+    List<Player> getPlayersByIds(List<String> playerIds);
+
+    List<SquadInfo> getSquadLeaderboard(int limit);
+
+    Map<String, Integer> getPlanetPopulationStats();
 }

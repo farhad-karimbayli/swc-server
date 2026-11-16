@@ -114,14 +114,30 @@ public class GameDataManagerImpl implements GameDataManager {
         Map<String, TournamentData> map = this.patchData.getMap(TournamentData.class);
         if (map != null) {
             List<TournamentData> validConflicts = new ArrayList<>();
+            Map<String, TournamentData> latestPerPlanet = new LinkedHashMap<>();
             long now = ServiceFactory.getSystemTimeSecondsFromEpoch();
             for (TournamentData data : map.values()) {
                 data.parseJoeDates();
+                if (data.planetId != null && !data.planetId.isEmpty()) {
+                    TournamentData prev = latestPerPlanet.get(data.planetId);
+                    if (prev == null || data.getEndTime() > prev.getEndTime()) {
+                        latestPerPlanet.put(data.planetId, data);
+                    }
+                }
                 // conflict is still valid
                 if (data.getStartTime() != 0 && data.getEndTime() != 0) {
                     if (data.getEndTime() >= now) {
                         validConflicts.add(data);
                     }
+                }
+            }
+
+            if (validConflicts.isEmpty() && !latestPerPlanet.isEmpty()) {
+                long week = 7L * 24L * 3600L;
+                for (TournamentData data : latestPerPlanet.values()) {
+                    data.setStartTime(now - 3600L);
+                    data.setEndTime(now + week);
+                    validConflicts.add(data);
                 }
             }
 

@@ -8,4 +8,5 @@ public class Upgrades {
     public Map<String, Integer> equipment = new HashMap<>();
     public Map<String, Integer> specialAttack = new HashMap<>();
     public Map<String, Integer> troop = new HashMap<>();
+    public PlayerCrates crates;
 }

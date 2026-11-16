@@ -29,9 +29,16 @@ public class PlayerRaidsComplete extends PlayerBattleComplete<PlayerRaidsComplet
                 playerSession.getRaidLogsManager().getObjectForReading(),
                 time);
 
-        // TODO - set reward
         RaidDefenseCompleteResult raidDefenseCompleteResult = new RaidDefenseCompleteResult();
-        raidDefenseCompleteResult.setAwardedCrateUid(null);
+        if (arguments.getStars() > 0) {
+            long now = time > 0 ? time : ServiceFactory.getSystemTimeSecondsFromEpoch();
+            swcnoops.server.model.CrateData crate = swcnoops.server.game.CrateService.createAndStoreCrate(
+                    playerSession, "lc_daily", "raid", arguments.getPlanetId(), now);
+            raidDefenseCompleteResult.setAwardedCrateUid(crate.uid);
+            playerSession.savePlayerKeepAlive();
+        } else {
+            raidDefenseCompleteResult.setAwardedCrateUid(null);
+        }
         raidDefenseCompleteResult.setRaidData(raid);
         return raidDefenseCompleteResult;
     }
