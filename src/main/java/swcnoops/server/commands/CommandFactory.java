@@ -24,6 +24,10 @@ public class CommandFactory {
         this.add(new PlayerDeviceRegister());
         this.add(new PlayerPreferencesSet());
         this.add(new GuildInviteGet());
+        this.add(new GuildInviteAction("guild.invite"));
+        this.add(new GuildInviteAction("guild.invite.accept"));
+        this.add(new GuildInviteAction("guild.invite.reject"));
+        this.add(new GuildWarClaim());
         this.add(new PlayerAccountExternalGet());
         this.add(new PlayerAccountExternalRegister());
         this.add(new PlayerAccountRecover());
@@ -54,6 +58,7 @@ public class CommandFactory {
         this.add(new PlayerBuildingRearm());
         this.add(new PlayerBuildingUpgrade());
         this.add(new PlayerBuildingClear());
+        this.add(new PlayerBuildingMove());
         this.add(new PlayerBuildingInstantUpgrade());
         this.add(new PlayerBuildingUpgradeAll());
         this.add(new PlayerBuildingSwap());
@@ -104,6 +109,8 @@ public class CommandFactory {
 
         this.add(new PlayerMissionsActivateMission());
         this.add(new PlayerMissionsClaimCampaign());
+        this.add(new PlayerMissionsAction("player.missions.showIntro"));
+        this.add(new PlayerMissionsAction("player.missions.startSpecop"));
 
         this.add(new PlayerFueComplete());
         this.add(new PlayerFueSetQuest());
@@ -114,6 +121,13 @@ public class CommandFactory {
         this.add(new PlayerIdentityGet());
         this.add(new PlayerIdentitySwitch());
         this.add(new PlayerStoreBuy());
+        this.add(new PlayerStoreExtrasAction("player.campaignStore.buy"));
+        this.add(new PlayerStoreExtrasAction("player.store.offers.buy"));
+        this.add(new PlayerStoreExtrasAction("player.store.offers.reserve"));
+        this.add(new PlayerStoreExtrasAction("player.store.offers.trigger"));
+        this.add(new PlayerStoreExtrasAction("player.store.tournament.buy"));
+        this.add(new PlayerStoreExtrasAction("player.store.multibuy"));
+        this.add(new PlayerStoreExtrasAction("player.award.rateMyApp"));
 
         this.add(new GuildLeaderboardGetLeaders());
         this.add(new PlayerLeaderboardGetLeaders());

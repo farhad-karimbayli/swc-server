@@ -749,6 +749,9 @@ public class PlayerSessionImpl implements PlayerSession {
     @Override
     public void pveBattleComplete(String battleId, int stars, Map<String, Integer> attackingUnitsKilled, long time) {
         processBattleComplete(attackingUnitsKilled, time);
+        if (stars > 0) {
+            advanceEpisodeTask();
+        }
         PlayerCampaignMission playerCampaignMission = this.getPlayerSettings().getPlayerCampaignMission();
         playerCampaignMission.battleComplete(battleId, stars);
         this.savePlayerSession();
@@ -759,10 +762,24 @@ public class PlayerSessionImpl implements PlayerSession {
                                   PvpMatch pvpMatch, long time)
     {
         processPvpBattleComplete(battleReplay, time);
+        if (battleReplay != null && battleReplay.battleLog != null && battleReplay.battleLog.stars > 0) {
+            advanceEpisodeTask();
+        }
         calculateResourcesGained(battleReplay, pvpMatch);
         updatePlayerAfterPvPBattle(battleReplay, pvpMatch);
         updateDefenderAfterPvPBattle(battleReplay, pvpMatch);
         ServiceFactory.instance().getPlayerDatasource().savePvPBattleComplete(this, pvpMatch, battleReplay);
+    }
+
+    private void advanceEpisodeTask() {
+        EpisodeProgressInfo info = this.getPlayerSettings().getEpisodeProgressInfo();
+        if (info != null && info.currentTask != null && !info.currentTask.completed) {
+            info.currentTask.count += 1;
+            if (info.currentTask.count >= Math.max(1, info.currentTask.target)) {
+                info.currentTask.count = Math.max(1, info.currentTask.target);
+                info.currentTask.completed = true;
+            }
+        }
     }
 
     private void updateDefenderAfterPvPBattle(BattleReplay battleReplay, PvpMatch pvpMatch) {

@@ -66,7 +66,15 @@ public class BatchProcessorTest {
                 + "{\"action\":\"player.episodes.tasks.claim\",\"args\":{},\"requestId\":6,\"time\":0,\"token\":\"t6\"},"
                 + "{\"action\":\"player.perks.activate\",\"args\":{},\"requestId\":7,\"time\":0,\"token\":\"t7\"},"
                 + "{\"action\":\"player.holonet.claimReward\",\"args\":{},\"requestId\":8,\"time\":0,\"token\":\"t8\"},"
-                + "{\"action\":\"player.planet.stats\",\"args\":{},\"requestId\":9,\"time\":0,\"token\":\"t9\"}"
+                + "{\"action\":\"player.planet.stats\",\"args\":{},\"requestId\":9,\"time\":0,\"token\":\"t9\"},"
+                + "{\"action\":\"player.building.move\",\"args\":{},\"requestId\":10,\"time\":0,\"token\":\"t10\"},"
+                + "{\"action\":\"player.missions.showIntro\",\"args\":{},\"requestId\":11,\"time\":0,\"token\":\"t11\"},"
+                + "{\"action\":\"player.missions.startSpecop\",\"args\":{},\"requestId\":12,\"time\":0,\"token\":\"t12\"},"
+                + "{\"action\":\"player.campaignStore.buy\",\"args\":{},\"requestId\":13,\"time\":0,\"token\":\"t13\"},"
+                + "{\"action\":\"player.store.tournament.buy\",\"args\":{},\"requestId\":14,\"time\":0,\"token\":\"t14\"},"
+                + "{\"action\":\"player.award.rateMyApp\",\"args\":{},\"requestId\":15,\"time\":0,\"token\":\"t15\"},"
+                + "{\"action\":\"guild.war.claim\",\"args\":{},\"requestId\":16,\"time\":0,\"token\":\"t16\"},"
+                + "{\"action\":\"guild.invite.accept\",\"args\":{},\"requestId\":17,\"time\":0,\"token\":\"t17\"}"
                 + "]}";
         Batch decodedNew = batchProcessor.decode(newCommandsBatch);
         batchProcessor.decodeCommands(decodedNew);

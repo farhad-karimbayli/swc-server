@@ -26,23 +26,25 @@ public class PlayerLeaderboardTournamentGetRank extends AbstractCommandAction<Pl
             TournamentStat tournamentStat = ServiceFactory.instance().getPlayerDatasource()
                     .getTournamentPlayerRank(tournamentData.getUid(), arguments.getPlayerId());
 
+            tournamentRankResult = new TournamentRankResult();
+            tournamentRankResult.tournament = new Tournament();
+            tournamentRankResult.tournament.uid = tournamentData.getUid();
+            tournamentRankResult.tournament.bestTier = 1;
+            tournamentRankResult.tournament.redeemedRewards = null;
+
             if (tournamentStat != null) {
-                tournamentRankResult = new TournamentRankResult();
-                tournamentRankResult.tournament = new Tournament();
-                tournamentRankResult.tournament.percentile = tournamentStat.percentile;
-                tournamentRankResult.tournament.uid = tournamentStat.uid;
-                tournamentRankResult.tournament.bestTier = 1;
+                float pct = tournamentStat.percentile != null ? tournamentStat.percentile : 100f;
+                tournamentRankResult.tournament.percentile = pct;
                 tournamentRankResult.tournament.rating = tournamentStat.value;
-                tournamentRankResult.tournament.redeemedRewards = null;
                 tournamentRankResult.tournament.collected = false;
-
-                tournamentRankResult.percentile = tournamentStat.percentile;
+                tournamentRankResult.percentile = pct;
                 tournamentRankResult.tier = null;
-
-                // TODO - when conflict finishes and its our final rank
-//            tournamentRankResult.tournament.finalRank = new TournamentRank();
-//            tournamentRankResult.tournament.finalRank.percentile = 2;
-//            tournamentRankResult.tournament.finalRank.tier = null;
+            } else {
+                tournamentRankResult.tournament.percentile = 100f;
+                tournamentRankResult.tournament.rating = 0;
+                tournamentRankResult.tournament.collected = false;
+                tournamentRankResult.percentile = 100f;
+                tournamentRankResult.tier = null;
             }
         }
 
