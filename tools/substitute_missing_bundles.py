@@ -251,12 +251,29 @@ def resolve_substitutions(present, missing):
                 subs.append((p, "assetbundles/android/audio_betaunit.assetbundle", "Audio: Unit sound fallback"))
                 continue
 
-        # 9. Squad War crates -> objective crates of matching tier
+        # 9. Squad War & Arctic crates -> existing crate models
         if fn.startswith("cratesqwar"):
             cand = f"assetbundles/android/{fn.replace('cratesqwar', 'crateobjec')}"
             if cand in present:
                 subs.append((p, cand, "Crate: Squad war crate fallback"))
                 continue
+        if fn.startswith("cratearctic_neu-mod"):
+            for cand in ("assetbundles/android/cratenight_neu-mod_tier1.assetbundle",
+                         "assetbundles/android/crateanh40_neu-mod.assetbundle"):
+                if cand in present:
+                    subs.append((p, cand, "Crate: Arctic crate fallback"))
+                    break
+            if p in [s[0] for s in subs]: continue
+
+        # 9b. Droideka shield animation level fallback (e.g. up20 -> up10/up30)
+        m_shield = re.match(r"^(artdroidekashield_con-ani-up)\d+(_.*\.assetbundle)$", fn)
+        if m_shield:
+            for lvl in ("10", "30", "1"):
+                cand = f"assetbundles/android/{m_shield.group(1)}{lvl}{m_shield.group(2)}"
+                if cand in present:
+                    subs.append((p, cand, "Droideka shield level fallback"))
+                    break
+            if p in [s[0] for s in subs]: continue
 
         # 10. Holonet / Command Center banners & character transmissions
         if fn.startswith(("hn_", "hh_", "hc_")):
