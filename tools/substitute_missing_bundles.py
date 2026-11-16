@@ -11,24 +11,28 @@ For each substituted bundle:
 3. Updates the manifest (__manifest_zyngaswc_prod.02045.json) with the new CRC
 """
 
+import glob
 import json
 import os
 import re
 import shutil
+import tempfile
 import zlib
+import UnityPy
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SWC_FILES = os.path.join(ROOT, "swcFiles")
-MANIFEST_PATH = os.path.join(SWC_FILES, "manifests", "__manifest_zyngaswc_prod.02045.json")
+MANIFEST_DIR = os.path.join(SWC_FILES, "manifests")
+MANIFEST_PATH = os.path.join(MANIFEST_DIR, "__manifest_zyngaswc_prod.02045.json")
 
 
-def load_manifest():
-    with open(MANIFEST_PATH, "r", encoding="utf-8") as f:
+def load_manifest(path=MANIFEST_PATH):
+    with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
-def save_manifest(manifest):
-    with open(MANIFEST_PATH, "w", encoding="utf-8") as f:
+def save_manifest(manifest, path=MANIFEST_PATH):
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(manifest, f, separators=(",", ":"))
 
 
@@ -181,14 +185,55 @@ def resolve_substitutions(present, missing):
                 subs.append((p, cands[0][1], f"Building level {lvl} -> {os.path.basename(cands[0][1])}"))
                 continue
 
-        # 6. Faction counterpart for same model (_emp <-> _rbl)
-        for f1, f2 in [("_emp", "_rbl"), ("_rbl", "_emp"), ("-emp", "-rbl"), ("-rbl", "-emp")]:
+        # 6. Faction counterpart for same model (_emp, _rbl, _smg, _con, _neu, _tkn, _dth, _empire, _rebel)
+        factions = ["_emp", "_rbl", "_smg", "_con", "_neu", "_tkn", "_dth"]
+        for f1 in factions:
+            if f1 in fn:
+                for f2 in factions:
+                    if f1 == f2:
+                        continue
+                    opp_p = f"assetbundles/android/{fn.replace(f1, f2)}"
+                    if opp_p in present:
+                        subs.append((p, opp_p, f"Faction counterpart: {f1} -> {f2}"))
+                        break
+            if p in [s[0] for s in subs]:
+                break
+        if p in [s[0] for s in subs]:
+            continue
+
+        for f1, f2 in [("-emp", "-rbl"), ("-rbl", "-emp"), ("_empire", "_rebel"), ("_rebel", "_empire")]:
             if f1 in fn:
                 opp_p = f"assetbundles/android/{fn.replace(f1, f2)}"
                 if opp_p in present:
-                    subs.append((p, opp_p, f"Faction counterpart: {f2}"))
+                    subs.append((p, opp_p, f"Faction counterpart: {f1} -> {f2}"))
                     break
         if p in [s[0] for s in subs]: continue
+
+        # 6b. Event troop transports
+        if fn.startswith("unittransport_event_troop_"):
+            for cand in ("assetbundles/android/unittransport_event_troop_soldier.assetbundle",
+                         "assetbundles/android/unittransport_event_troop_storm.assetbundle"):
+                if cand in present:
+                    subs.append((p, cand, "Transport: Event troop transport fallback"))
+                    break
+            if p in [s[0] for s in subs]: continue
+
+        # 6c. Planet PvP maps
+        if fn.startswith("planetpvp-"):
+            for pres_p in sorted(present):
+                if os.path.basename(pres_p).startswith("planetpvp-"):
+                    subs.append((p, pres_p, "Planet PvP map fallback"))
+                    break
+            if p in [s[0] for s in subs]: continue
+
+        # 6d. Neutral / planet walls
+        if "wall_neu-mod" in fn:
+            for cand in ("assetbundles/android/wall_tkn-mod.assetbundle",
+                         "assetbundles/android/wall_emp-mod-up1.assetbundle"):
+                if cand in present:
+                    subs.append((p, cand, "Wall fallback"))
+                    break
+            if p in [s[0] for s in subs]: continue
 
         # 7. Skin variants (halfskin)
         if "halfskin" in fn:
@@ -209,6 +254,87 @@ def resolve_substitutions(present, missing):
     return subs
 
 
+def repack_bundle(src_path, dest_path, target_bundle_name):
+    """Copy and rewrite Unity AssetBundle metadata so Unity finds the asset by target name."""
+    target_stem = target_bundle_name.removesuffix(".assetbundle")
+    is_audio = target_bundle_name.startswith("audio_")
+    env = UnityPy.load(src_path)
+    ab_objs = [o for o in env.objects if o.type.name == "AssetBundle"]
+
+    if not ab_objs:
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+        if os.path.abspath(src_path) != os.path.abspath(dest_path):
+            if os.path.exists(dest_path):
+                os.unlink(dest_path)
+            shutil.copyfile(src_path, dest_path)
+        return
+
+    ab = ab_objs[0].read()
+    old_stem = ab.m_AssetBundleName.removesuffix(".assetbundle")
+    ab.m_Name = target_bundle_name
+    ab.m_AssetBundleName = target_bundle_name
+
+    if not is_audio and ab.m_Container:
+        new_container = []
+        target_pids = {}
+        rename_all = len(ab.m_Container) == 1
+        for k, v in ab.m_Container:
+            dir_part, fname = k.rsplit("/", 1) if "/" in k else ("", k)
+            stem, ext = os.path.splitext(fname)
+            new_stem = None
+            if stem.lower() == old_stem.lower():
+                new_stem = target_stem
+            elif old_stem and stem.lower().startswith(old_stem.lower()):
+                new_stem = target_stem + stem[len(old_stem):]
+            elif rename_all:
+                new_stem = target_stem
+
+            if new_stem is not None:
+                new_k = (f"{dir_part}/" if dir_part else "") + new_stem + ext
+                new_container.append((new_k, v))
+                if v.asset.path_id != 0:
+                    target_pids[v.asset.path_id] = new_stem
+            else:
+                new_container.append((k, v))
+        ab.m_Container = new_container
+        for obj in env.objects:
+            if obj.path_id in target_pids:
+                d = obj.read()
+                if hasattr(d, "m_Name"):
+                    d.m_Name = target_pids[obj.path_id]
+                    d.save()
+
+    ab.save()
+    dest_dir = os.path.dirname(dest_path)
+    os.makedirs(dest_dir, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(prefix=".repack_", suffix=".assetbundle", dir=dest_dir)
+    os.close(fd)
+    try:
+        with open(tmp_path, "wb") as f:
+            f.write(env.file.save(packer="original"))
+        os.replace(tmp_path, dest_path)
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+def sync_custom_manifests(updated_crcs):
+    pattern = os.path.join(MANIFEST_DIR, "__manifest_zyngaswc_prod.*.json")
+    for mpath in sorted(glob.glob(pattern)):
+        if mpath == MANIFEST_PATH:
+            continue
+        custom = load_manifest(mpath)
+        changed = 0
+        for p, (v, crc) in updated_crcs.items():
+            entry = custom.get("paths", {}).get(p)
+            if entry and entry.get("v") == v and entry.get("crc") != crc:
+                entry["crc"] = crc
+                changed += 1
+        if changed:
+            save_manifest(custom, mpath)
+            print(f"  [SYNC] Updated {changed} CRCs in {os.path.basename(mpath)}")
+
+
 def main():
     print("=== Star Wars Commander Asset Bundle Fallback Generator ===")
     manifest = load_manifest()
@@ -217,37 +343,45 @@ def main():
     print(f"Present: {len(present)}, Missing: {len(missing)}")
 
     subs = resolve_substitutions(present, missing)
-    print(f"\nFound {len(subs)} valid substitutions.")
+    print(f"\nFound {len(subs)} new missing-bundle substitutions.")
 
+    updated_crcs = {}
     applied = 0
     for target_p, src_p, reason in subs:
         meta = manifest["paths"][target_p]
         v = meta.get("v")
-
-        # Destination path
-        dest_dir = os.path.join(SWC_FILES, str(v), os.path.dirname(target_p))
         dest_path = os.path.join(SWC_FILES, str(v), target_p)
-        os.makedirs(dest_dir, exist_ok=True)
-
-        # Source path
         src_path = present[src_p][0]
+        target_fn = os.path.basename(target_p)
 
-        # Copy or hardlink
-        if not os.path.exists(dest_path):
-            try:
-                os.link(src_path, dest_path)
-            except OSError:
-                shutil.copyfile(src_path, dest_path)
-
-        # Calculate CRC32 of target
+        repack_bundle(src_path, dest_path, target_fn)
         new_crc = compute_crc(dest_path)
         manifest["paths"][target_p]["crc"] = new_crc
+        updated_crcs[target_p] = (v, new_crc)
         applied += 1
-        print(f"  [SUB] {os.path.basename(target_p)}  <--  {os.path.basename(src_p)} (CRC: {new_crc}, {reason})")
+        print(f"  [SUB] {target_fn}  <--  {os.path.basename(src_p)} (CRC: {new_crc}, {reason})")
+
+    # Also repack any previously substituted bundles whose internal AssetBundleName still mismatches
+    repacked = 0
+    for p, (fp, meta) in present.items():
+        target_fn = os.path.basename(p)
+        env = UnityPy.load(fp)
+        ab_objs = [o for o in env.objects if o.type.name == "AssetBundle"]
+        if not ab_objs:
+            continue
+        ab = ab_objs[0].read()
+        if ab.m_AssetBundleName != target_fn:
+            repack_bundle(fp, fp, target_fn)
+            new_crc = compute_crc(fp)
+            v = meta.get("v")
+            manifest["paths"][p]["crc"] = new_crc
+            updated_crcs[p] = (v, new_crc)
+            repacked += 1
 
     # Save manifest with updated CRCs
     save_manifest(manifest)
-    print(f"\nSuccessfully applied {applied} substitutions and updated manifest CRCs!")
+    sync_custom_manifests(updated_crcs)
+    print(f"\nSuccessfully applied {applied} new substitutions, repacked {repacked} existing substitutions, and updated manifest CRCs!")
 
 
 if __name__ == "__main__":

@@ -619,4 +619,73 @@ Real game logs showed recurring 404s on specific assets during base load and cam
 - Recalculates the CRC32 of each file and updates the corresponding entry in `__manifest_zyngaswc_prod.02045.json` so Unity's cache-and-download verification passes with zero CRC mismatches. Backup in `__manifest_...json.before-substitutions`.
 - Android bundles on disk increased from 1,215 to 1,354. Verified 1,354 / 1,354 with zero CRC mismatches.
 
+## 2026-10-31 — Per-account isolated balance patches (turrets, shields, walls, squad center)
+
+User requested supercharged base defenses strictly on their account (`dad436c8-761c-4579-8a76-0f910850510d`) without affecting other players.
+
+Implementation:
+1. `PlayerContentGet.java` now checks if `swcFiles/manifests/__manifest_zyngaswc_prod.<playerId>.json` exists.
+   - If present for the requesting player, the server delivers their personalized manifest.
+   - All other accounts receive the default pristine `02045` manifest (`__manifest_zyngaswc_prod.02045.json`).
+2. `tools/create_player_patches.py` modifies the JOE binary data and re-packs new UnityFS asset bundles into `swcFiles/1605000000/patches/`:
+   - **Empire Walls & Turrets:** Returned to standard authentic health (e.g. Wall 11: 19,080 HP; Turret 11: 28,500 HP; turret damage/DPS standard).
+   - **Empire Shield Generators (L1-L11):** Generator Health increased 15x (L11: 28,500 -> 427,500 HP); Shield dome capacity (`shield_health_per_point`) increased 15x (L11: 100,000 -> 1,500,000 Shield HP, up to 3,000,000 HP).
+   - **Empire Squad Building (L1-L11):** `activationRadius` set to 60 (covers entire 44x44 base grid).
+3. Plain JSON files (`base.json`, `trp.json`) in `swcFiles/1605000000/patches/` mirror the bundle changes.
+4. Custom manifest `__manifest_zyngaswc_prod.dad436c8-761c-4579-8a76-0f910850510d.json` updated to version `1605000000`.
+
+## 2026-10-31 — Auto-completion of story construction/building missions
+
+User requested all construction-related story missions to be completed for their Empire account (`dad436c8-761c-4579-8a76-0f910850510d`).
+
+Analysis:
+- Audited all Empire campaign missions in `cae.json`: 33 missions have type `Own` with building conditions (`OwnBuildingTypeLevel` / `OwnBuildingIdLevel`).
+- 10 missions were previously completed and claimed.
+- 23 uncompleted construction missions across chapters 3-11:
+  - Chapter 3: `camp_3_tjg_e_7` (was Active, blocking completion of Chapter 3).
+  - Chapter 4: `camp_4_sotm_e_1`, `camp_4_sotm_e_7`, `camp_4_sotm_e_8`, `camp_4_sotm_e_10`.
+  - Chapter 5: `camp_5_tih_e_1`, `camp_5_tih_e_2`, `camp_5_tih_e_4`, `camp_5_tih_e_7`.
+  - Chapter 7: `chapter_7_bs_e_4`, `chapter_7_bs_e_6`, `chapter_7_bs_e_12`, `chapter_7_bs_e_13`.
+  - Chapter 8: `chapter_8_tat_e_3`, `chapter_8_tat_e_7`.
+  - Chapter 9: `chapter_9_sas_e_1`, `chapter_9_sas_e_5`.
+  - Chapter 10: `chapter_10_bgh_e_1`, `chapter_10_bgh_e_5`, `chapter_10_bgh_e_12`.
+  - Chapter 11: `chapter_11_tbft_e_1`, `chapter_11_tbft_e_3`, `chapter_11_tbft_e_6`.
+
+Execution:
+1. Server stopped (`pkill -f swcnoops.server.SparkMain`).
+2. Player record backed up in MongoDB `swc.player_backup`.
+3. Marked all 23 missions as `completed: true, collected: true, status: "Claimed", earnedStars: 3, locked: false, activated: false`.
+4. Chapter 3 (`cmp_3_tjg_e`) marked `completed: true, collected: true`.
+5. Subsequent battle/event missions in unlocked chapters transitioned to `Active` status (`camp_4_sotm_e_9`, `camp_5_tih_e_3`, `chapter_9_sas_e_2`, `chapter_10_bgh_e_2`, `chapter_11_tbft_e_2`).
+6. Server restarted cleanly (`nohup ./run.sh > run.log 2>&1 &`).
+
+## 2026-10-31 — Enemy shield generator fix & verified account isolation
+
+User reported: "По моему ты изменил характеристики не только у меня проверь это" (It seems to me you changed stats not only for me, check this).
+
+Investigation:
+1. **Server-side account isolation verified**:
+   - Only `dad436c8-761c-4579-8a76-0f910850510d` receives the custom manifest (`__manifest_zyngaswc_prod.<id>.json`).
+   - All other accounts on the server receive the pristine `__manifest_zyngaswc_prod.02045.json` pointing to original version `1584443067` assets.
+2. **Root cause of user's observation during battles**:
+   - In `run.log`, user had just played story mission `chapter_7_bs_e_8` (`bat_6_bs_e_8`).
+   - The map contains a Rebel enemy base with `rebelShieldGenerator5`.
+   - In the previous patch, `shield_health_per_point` in `GameConstants` had all 21 values multiplied by 15. Because `GameConstants` is a global table shared across all factions, `rebelShieldGenerator5` on the enemy base also received a 15x shield dome (600,000 HP instead of authentic 40,000 HP).
+   - This made enemy Rebel shields in campaign battles artificially super-buffed.
+
+Fix implemented in patch version `1607000000` (manifest `02050`):
+1. **GameConstants `shield_health_per_point`**:
+   - Preserves all 21 original authentic values intact (`5000 10000 20000 ... 200000`).
+   - Appends 11 custom 15x values at indices 22..32 (`75000 150000 300000 ... 1500000`).
+2. **BuildingData**:
+   - `empireShieldGenerator1..11`: HP kept at 15x normal, `shieldHealthPoints` remapped to indices `22..32`.
+   - `rebelShieldGenerator1..11`: kept at pristine indices `1..11` (dome HP 1x normal, e.g. L5 = 40,000 HP, L11 = 100,000 HP).
+   - All Smuggler, Story, and Forest shields: kept at pristine indices (1x normal).
+   - `empireSquadBuilding1..11`: `activationRadius` = 60.
+   - `rebelSquadBuilding1..11`: `activationRadius` = 12 (pristine).
+3. Verified via unpack script:
+   - Enemy `rebelShieldGenerator5`: HP 14,500, Dome 40,000 (100% authentic normal).
+   - Enemy `rebelSquadBuilding11`: Radius 12 (100% authentic normal).
+   - User `empireShieldGenerator11`: HP 427,500 (15x), Dome 1,500,000 (15x).
+   - User `empireSquadBuilding11`: Radius 60 (entire base coverage).
 
