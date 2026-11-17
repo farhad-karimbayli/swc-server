@@ -21,8 +21,13 @@ public class GuildEdit extends AbstractCommandAction<GuildEdit, CommandResult> {
                 .getPlayerSession(arguments.getPlayerId());
 
         GuildSession guildSession = playerSession.getGuildSession();
-
-        if (guildSession != null && guildSession.canEdit()) {
+        if (guildSession == null) {
+            return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_NOT_IN_GUILD);
+        }
+        if (!GuildHelper.hasGuildRank(guildSession, arguments.getPlayerId(), false)) {
+            return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_NOT_ENOUGH_GUILD_RANK);
+        }
+        if (guildSession.canEdit()) {
             guildSession.editGuild(arguments.getDescription(),
                     arguments.getIcon(),
                     arguments.getMinScoreAtEnrollment(),

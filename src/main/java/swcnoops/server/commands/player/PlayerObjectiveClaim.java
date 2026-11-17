@@ -5,15 +5,16 @@ import org.slf4j.LoggerFactory;
 import swcnoops.server.ServiceFactory;
 import swcnoops.server.commands.AbstractCommandAction;
 import swcnoops.server.commands.player.response.CrateDataResult;
+import swcnoops.server.game.ObjTableData;
+import swcnoops.server.game.PatchData;
 import swcnoops.server.json.JsonParser;
 import swcnoops.server.model.ObjectiveGroup;
 import swcnoops.server.model.ObjectiveProgress;
 import swcnoops.server.model.ObjectiveState;
 import swcnoops.server.session.PlayerSession;
+import java.util.Map;
 import java.util.Optional;
 
-// TODO - to finish
-// look at which objective is being claimed, get its reward and return
 public class PlayerObjectiveClaim extends AbstractCommandAction<PlayerObjectiveClaim, CrateDataResult> {
     private static final Logger LOG = LoggerFactory.getLogger(PlayerObjectiveClaim.class);
 
@@ -28,12 +29,13 @@ public class PlayerObjectiveClaim extends AbstractCommandAction<PlayerObjectiveC
         ObjectiveGroup group =
                 playerSession.getPlayerObjectivesManager().getObjectForReading().get(arguments.getPlanetId());
 
-        ObjectiveProgress progress = getProgress(group, arguments.getObjectiveId());
+        ObjectiveProgress progress = group != null ? getProgress(group, arguments.getObjectiveId()) : null;
         CrateDataResult result = new CrateDataResult();
         if (progress != null && !progress.claimAttempt) {
             if (progress.state != ObjectiveState.complete) {
-                LOG.warn("Player is claiming an incomplete objective, which has " + progress.count + " for target "
-                        + progress.target + " for player " + arguments.getPlayerId());
+                LOG.warn("Rejecting incomplete objective claim {} ({}/{}) for player {}",
+                        arguments.getObjectiveId(), progress.count, progress.target, arguments.getPlayerId());
+                return result;
             }
 
             progress.claimAttempt = true;
@@ -41,13 +43,26 @@ public class PlayerObjectiveClaim extends AbstractCommandAction<PlayerObjectiveC
             playerSession.getPlayerObjectivesManager().getObjectForWriting();
 
             long now = time > 0 ? time : ServiceFactory.getSystemTimeSecondsFromEpoch();
+            String crateUid = resolveCrateRewardUid(arguments.getObjectiveId());
             swcnoops.server.model.CrateData crate = swcnoops.server.game.CrateService.createAndStoreCrate(
-                    playerSession, "lc_daily", "objective", arguments.getPlanetId(), now);
+                    playerSession, crateUid, "objective", arguments.getPlanetId(), now);
             result.setCrateData(crate);
             playerSession.savePlayerKeepAlive();
         }
 
         return result;
+    }
+
+    private static String resolveCrateRewardUid(String objectiveUid) {
+        if (objectiveUid != null && ServiceFactory.instance().getGameDataManager() != null) {
+            PatchData patchData = ServiceFactory.instance().getGameDataManager().getPatchData();
+            Map<String, ObjTableData> map = patchData != null ? patchData.getMap(ObjTableData.class) : null;
+            ObjTableData objData = map != null ? map.get(objectiveUid) : null;
+            if (objData != null && objData.getCrateRewardUid() != null && !objData.getCrateRewardUid().isEmpty()) {
+                return objData.getCrateRewardUid();
+            }
+        }
+        return "lc_daily";
     }
 
     private ObjectiveProgress getProgress(ObjectiveGroup group, String objectiveId) {

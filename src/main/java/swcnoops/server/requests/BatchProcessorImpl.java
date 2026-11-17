@@ -67,6 +67,7 @@ public class BatchProcessorImpl implements BatchProcessor {
         Exception exceptionResponse = null;
 
         try {
+            String authenticatedPlayerId = AuthenticationService.extractPlayerId(batch.getAuthKey());
             boolean attachedGuildNotificationFound = false;
             for (Command command : batch.getCommands()) {
                 CommandAction commandAction = command.getCommandAction();
@@ -75,6 +76,7 @@ public class BatchProcessorImpl implements BatchProcessor {
                     throw new Exception("Command " + command.getAction() + " not supported");
                 }
 
+                command.setAuthenticatedPlayerId(authenticatedPlayerId);
                 if (!attachedGuildNotificationFound && commandAction.canAttachGuildNotifications()) {
                     command.setAttachGuildNotification(true);
                     attachedGuildNotificationFound = true;

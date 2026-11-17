@@ -160,6 +160,12 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
             if (squad != null && squad.perks != null) {
                 playerLoginResponse.playerModel.perksInfo = squad.perks;
             }
+            int reloDiscount = swcnoops.server.game.CurrencyHelper.getActiveRelocationDiscount(playerSession, time);
+            if (reloDiscount > 0 && playerLoginResponse.playerModel.relocationStarCount != null
+                    && playerLoginResponse.playerModel.relocationStarCount > 0) {
+                playerLoginResponse.playerModel.relocationStarCount = Math.max(
+                        0, playerLoginResponse.playerModel.relocationStarCount - reloDiscount);
+            }
         }
 
         mapProtection(playerLoginResponse.playerModel, playerSession, time);

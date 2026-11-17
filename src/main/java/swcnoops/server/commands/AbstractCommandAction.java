@@ -7,6 +7,7 @@ import swcnoops.server.model.SquadMessage;
 import swcnoops.server.model.SquadMsgType;
 import swcnoops.server.model.SquadNotification;
 import swcnoops.server.requests.*;
+import swcnoops.server.session.AuthenticationService;
 import swcnoops.server.session.GuildSession;
 import swcnoops.server.session.PlayerSession;
 
@@ -22,6 +23,16 @@ abstract public class AbstractCommandAction<A extends CommandArguments, R extend
         JsonParser jsonParser = ServiceFactory.instance().getJsonParser();
         A parsedArgument = this.parseArgument(jsonParser, command.getArgs());
         command.setParsedArgument(parsedArgument);
+        if (!this.isAuthCommand() && command.getAuthenticatedPlayerId() != null && parsedArgument != null) {
+            if (!AuthenticationService.isAuthorizedPlayerId(
+                    command.getAuthenticatedPlayerId(), parsedArgument.getPlayerId())) {
+                ResponseData rejected = new ResponseData();
+                rejected.requestId = command.getRequestId();
+                rejected.status = ResponseHelper.STATUS_CODE_BAD_INPUT;
+                rejected.messages = EmptyMessage.instance;
+                return rejected;
+            }
+        }
         R commandResult = this.execute(parsedArgument, command.getTime());
         command.setResponse(commandResult);
         ResponseData responseData = createResponse(command, commandResult);

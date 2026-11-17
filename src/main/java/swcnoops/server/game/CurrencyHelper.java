@@ -9,6 +9,7 @@ import swcnoops.server.session.PlayerSession;
 import swcnoops.server.session.map.MapItem;
 import swcnoops.server.session.map.StorageBuilding;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -208,30 +209,29 @@ public class CurrencyHelper {
     }
 
     /**
-     * Returns active squad-perk contractCost discount factor in [0.0, 0.95] for the given building.
+     * Collects all currently active squad perk effects matching {@code effectType}.
      */
-    public static double getActiveContractDiscount(PlayerSession playerSession, BuildingData buildingData, long now) {
-        if (playerSession == null || buildingData == null || buildingData.getType() == null) {
-            return 0.0;
+    private static List<PerkEffectData> getActivePerkEffects(PlayerSession playerSession, String effectType, long now) {
+        List<PerkEffectData> matches = new ArrayList<>();
+        if (playerSession == null || effectType == null) {
+            return matches;
         }
         GuildSession guildSession = playerSession.getGuildSession();
         if (guildSession == null || guildSession.getSquadManager() == null) {
-            return 0.0;
+            return matches;
         }
         Squad squad = guildSession.getSquadManager().getObjectForReading();
         if (squad == null || squad.perks == null || squad.perks.available == null || squad.perks.available.isEmpty()) {
-            return 0.0;
+            return matches;
         }
         GameDataManager gameDataManager = ServiceFactory.instance().getGameDataManager();
         PatchData patchData = gameDataManager != null ? gameDataManager.getPatchData() : null;
         Map<String, PerkData> perkMap = patchData != null ? patchData.getMap(PerkData.class) : null;
         Map<String, PerkEffectData> effectMap = patchData != null ? patchData.getMap(PerkEffectData.class) : null;
         if (perkMap == null || effectMap == null) {
-            return 0.0;
+            return matches;
         }
-        String targetBuilding = buildingData.getType().name();
         long checkTime = now > 0 ? now : ServiceFactory.getSystemTimeSecondsFromEpoch();
-        double discount = 0.0;
         for (Map.Entry<String, String> entry : squad.perks.available.entrySet()) {
             PerkData perk = perkMap.get(entry.getKey());
             if (perk == null || perk.getPerkEffects() == null || !isPerkActive(perk, entry.getValue(), checkTime)) {
@@ -239,13 +239,95 @@ public class CurrencyHelper {
             }
             for (String effectUid : perk.getPerkEffects()) {
                 PerkEffectData effect = effectMap.get(effectUid);
-                if (effect != null && "contractCost".equals(effect.getType())
-                        && targetBuilding.equals(effect.getBuilding())) {
-                    discount = Math.max(discount, effect.getDiscountFactor());
+                if (effect != null && effectType.equals(effect.getType())) {
+                    matches.add(effect);
                 }
             }
         }
+        return matches;
+    }
+
+    /**
+     * Returns active squad-perk contractCost discount factor in [0.0, 0.95] for the given building.
+     */
+    public static double getActiveContractDiscount(PlayerSession playerSession, BuildingData buildingData, long now) {
+        if (buildingData == null || buildingData.getType() == null) {
+            return 0.0;
+        }
+        String targetBuilding = buildingData.getType().name();
+        double discount = 0.0;
+        for (PerkEffectData effect : getActivePerkEffects(playerSession, "contractCost", now)) {
+            if (targetBuilding.equals(effect.getBuilding())) {
+                discount = Math.max(discount, effect.getDiscountFactor());
+            }
+        }
         return Math.min(0.95, Math.max(0.0, discount));
+    }
+
+    /**
+     * Returns active squad-perk contractTime reduction factor in [0.0, 0.95] for the given building.
+     */
+    public static double getActiveContractTimeReduction(PlayerSession playerSession, BuildingData buildingData, long now) {
+        if (buildingData == null || buildingData.getType() == null) {
+            return 0.0;
+        }
+        String targetBuilding = buildingData.getType().name();
+        double reduction = 0.0;
+        for (PerkEffectData effect : getActivePerkEffects(playerSession, "contractTime", now)) {
+            if (targetBuilding.equals(effect.getBuilding())) {
+                reduction = Math.max(reduction, effect.getTimeReductionFactor());
+            }
+        }
+        return Math.min(0.95, Math.max(0.0, reduction));
+    }
+
+    /**
+     * Returns active resource generator multiplier bonus (>= 0.0) for the given currency.
+     */
+    public static double getActiveGeneratorBoost(PlayerSession playerSession, CurrencyType currency, long now) {
+        if (currency == null) {
+            return 0.0;
+        }
+        double boost = 0.0;
+        for (PerkEffectData effect : getActivePerkEffects(playerSession, "generator", now)) {
+            if (currency.name().equalsIgnoreCase(effect.getCurrency())) {
+                boost = Math.max(boost, effect.getGenerationRateFactor());
+            }
+        }
+        return Math.max(0.0, boost);
+    }
+
+    /**
+     * Returns active relocation star discount (>= 0).
+     */
+    public static int getActiveRelocationDiscount(PlayerSession playerSession, long now) {
+        int discount = 0;
+        for (PerkEffectData effect : getActivePerkEffects(playerSession, "relocation", now)) {
+            discount = Math.max(discount, effect.getRelocationDiscountValue());
+        }
+        return Math.max(0, discount);
+    }
+
+    /**
+     * Returns active squad troop request extra capacity bonus (>= 0).
+     */
+    public static int getActiveTroopRequestAmountBonus(PlayerSession playerSession, long now) {
+        int bonus = 0;
+        for (PerkEffectData effect : getActivePerkEffects(playerSession, "troopRequestAmount", now)) {
+            bonus = Math.max(bonus, effect.getTroopRequestAmountValue());
+        }
+        return Math.max(0, bonus);
+    }
+
+    /**
+     * Returns active squad troop request cooldown discount in seconds (>= 0).
+     */
+    public static int getActiveTroopRequestTimeDiscount(PlayerSession playerSession, long now) {
+        int discount = 0;
+        for (PerkEffectData effect : getActivePerkEffects(playerSession, "troopRequestTime", now)) {
+            discount = Math.max(discount, effect.getTroopRequestTimeDiscountValue());
+        }
+        return Math.max(0, discount);
     }
 
     private static boolean isPerkActive(PerkData perk, String storedTimestamp, long now) {
@@ -269,5 +351,25 @@ public class CurrencyHelper {
             return baseCost;
         }
         return Math.max(1, (int) Math.floor(baseCost * (1.0 - Math.min(0.95, discount))));
+    }
+
+    /**
+     * Applies a fractional contractTime reduction to a positive duration in seconds.
+     */
+    public static long applyTimeReduction(long seconds, double reduction) {
+        if (seconds <= 0 || reduction <= 0.0) {
+            return seconds;
+        }
+        return Math.max(1L, (long) Math.floor(seconds * (1.0 - Math.min(0.95, reduction))));
+    }
+
+    /**
+     * Applies a fractional generator rate boost (>= 0) to generated resources.
+     */
+    public static int applyGeneratorBoost(int baseAmount, double boost) {
+        if (baseAmount <= 0 || boost <= 0.0) {
+            return baseAmount;
+        }
+        return (int) Math.floor(baseAmount * (1.0 + boost));
     }
 }

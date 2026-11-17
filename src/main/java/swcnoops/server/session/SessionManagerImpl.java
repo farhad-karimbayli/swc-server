@@ -25,23 +25,39 @@ public class SessionManagerImpl implements SessionManager {
 
     @Override
     public PlayerSession loginPlayerSession(String playerId) {
-        // if already cached then we want to reload from DB
-        if (this.players.containsKey(playerId)) {
-            Player player = loadPlayer(playerId);
-            this.players.get(playerId).initialise(player);
+        if (playerId == null) {
+            return null;
         }
-
-        return this.getPlayerSession(playerId);
+        synchronized (playerId.intern()) {
+            if (this.players.containsKey(playerId)) {
+                Player player = loadPlayer(playerId);
+                this.players.get(playerId).initialise(player);
+            }
+            return this.getPlayerSession(playerId);
+        }
     }
 
     private PlayerSession getOrLoadPlayerSession(String playerId) {
         if (playerId == null) {
             return null;
         }
-        return this.players.computeIfAbsent(playerId, id -> {
-            Player player = loadPlayer(id);
-            return player != null ? new PlayerSessionImpl(player) : null;
-        });
+        PlayerSession existing = this.players.get(playerId);
+        if (existing != null) {
+            return existing;
+        }
+        synchronized (playerId.intern()) {
+            existing = this.players.get(playerId);
+            if (existing != null) {
+                return existing;
+            }
+            Player player = loadPlayer(playerId);
+            if (player == null) {
+                return null;
+            }
+            PlayerSession created = new PlayerSessionImpl(player);
+            this.players.put(playerId, created);
+            return created;
+        }
     }
 
     private Player loadPlayer(String playerId) {

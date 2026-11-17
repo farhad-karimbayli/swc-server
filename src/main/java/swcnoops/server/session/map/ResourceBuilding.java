@@ -31,7 +31,7 @@ public class ResourceBuilding extends MapItemImpl {
         if (givenDelta <= 0)
             return null;
 
-        int estimatedAmount = estimateGeneratedAmount(this.building, this.buildingData, time);
+        int estimatedAmount = estimateGeneratedAmount(playerSession, this.building, this.buildingData, time);
         int storageAvailable = CurrencyHelper.calculateStorageAvailable(this.getBuildingData().getCurrency(), playerSession);
 
         // is there enough generated to cover this part of the collection
@@ -56,7 +56,7 @@ public class ResourceBuilding extends MapItemImpl {
     {
         int givenTotal = getGivenTotal(this.getBuildingData().getCurrency(), credits, materials, contraband);
         int givenDelta = calculateGivenDeltaCollected(this.getBuildingData().getCurrency(), givenTotal, playerSession);
-        int estimatedAmount = estimateGeneratedAmount(this.building, this.buildingData, time);
+        int estimatedAmount = estimateGeneratedAmount(playerSession, this.building, this.buildingData, time);
         int storageAvailable = CurrencyHelper.calculateStorageAvailable(this.getBuildingData().getCurrency(), playerSession);
 
         int expectedDelta = estimatedAmount;
@@ -73,9 +73,10 @@ public class ResourceBuilding extends MapItemImpl {
         return new CurrencyDelta(givenDelta, expectedDelta, this.getBuildingData().getCurrency(), false);
     }
 
-    private int estimateGeneratedAmount(Building building, BuildingData buildingData, long time) {
+    private int estimateGeneratedAmount(PlayerSession playerSession, Building building, BuildingData buildingData, long time) {
         float timeDelta = time - building.lastCollectTime;
-        int delta = (int)(timeDelta * (buildingData.getProduce()/buildingData.getCycleTime()));
+        double boost = CurrencyHelper.getActiveGeneratorBoost(playerSession, buildingData.getCurrency(), time);
+        int delta = (int)(timeDelta * (buildingData.getProduce() / buildingData.getCycleTime()) * (1.0 + boost));
         delta += building.currentStorage;
         if (delta > buildingData.getStorage())
             delta = buildingData.getStorage();

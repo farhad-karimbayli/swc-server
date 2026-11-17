@@ -1,5 +1,7 @@
 package swcnoops.server.session;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import swcnoops.server.ServiceFactory;
 import swcnoops.server.commands.guild.TroopDonationResult;
 import swcnoops.server.datasource.*;
@@ -16,6 +18,8 @@ import java.util.stream.Collectors;
 import static swcnoops.server.session.NotificationFactory.createNotification;
 
 public class GuildSessionImpl implements GuildSession {
+    private static final Logger LOG = LoggerFactory.getLogger(GuildSessionImpl.class);
+    private static final int MAX_CACHED_NOTIFICATIONS = 500;
     final private String guildId;
     final private String guildName;
     final private GuildSettings guildSettings;
@@ -77,12 +81,13 @@ public class GuildSessionImpl implements GuildSession {
                         this.latestNotificationDate = getMaxNotificationDate(latestNotifications);
                         latestNotifications.forEach(a -> {
                             if (this.messageIds.contains(a.getId())) {
-                                System.out.println("message already in");
+                                LOG.debug("Duplicate guild notification ignored: {}", a.getId());
                             } else {
                                 this.messageIds.add(a.getId());
                                 this.squadNotifications.add(a);
                             }
                         });
+                        trimCachedNotifications();
                     }
                 }
             } finally {
@@ -95,13 +100,28 @@ public class GuildSessionImpl implements GuildSession {
         return notifications;
     }
 
+    private void trimCachedNotifications() {
+        while (this.squadNotifications.size() > MAX_CACHED_NOTIFICATIONS) {
+            SquadNotification removed = ((ConcurrentLinkedQueue<SquadNotification>) this.squadNotifications).poll();
+            if (removed == null) {
+                break;
+            }
+            if (removed.getId() != null) {
+                this.messageIds.remove(removed.getId());
+            }
+        }
+    }
+
     @Override
     public void setNotificationDirty(long date) {
         this.notificationLock.lock();
-        if (this.latestDirtyNotificationDate < date) {
-            this.latestDirtyNotificationDate = date;
+        try {
+            if (this.latestDirtyNotificationDate < date) {
+                this.latestDirtyNotificationDate = date;
+            }
+        } finally {
+            this.notificationLock.unlock();
         }
-        this.notificationLock.unlock();
     }
 
     @Override

@@ -8,6 +8,8 @@ import swcnoops.server.requests.EmptyMessage;
 import swcnoops.server.requests.Messages;
 
 public class AuthPreauthGeneratePlayerWithFacebook extends AbstractCommandAction<AuthPreauthGeneratePlayerWithFacebook, GeneratePlayerCommandResult> {
+    private String locale;
+
     @Override
     protected AuthPreauthGeneratePlayerWithFacebook parseArgument(JsonParser jsonParser, Object argumentObject) {
         return jsonParser.fromJsonObject(argumentObject, AuthPreauthGeneratePlayerWithFacebook.class);
@@ -15,7 +17,13 @@ public class AuthPreauthGeneratePlayerWithFacebook extends AbstractCommandAction
 
     @Override
     protected GeneratePlayerCommandResult execute(AuthPreauthGeneratePlayerWithFacebook arguments, long time) throws Exception {
-        throw new UnsupportedOperationException("");
+        GeneratePlayer delegate = new GeneratePlayer();
+        delegate.setLocale(arguments != null ? arguments.getLocale() : null);
+        return delegate.execute(delegate, time);
+    }
+
+    public String getLocale() {
+        return locale;
     }
 
     @Override

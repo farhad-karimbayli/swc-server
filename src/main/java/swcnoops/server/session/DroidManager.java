@@ -93,7 +93,10 @@ public class DroidManager implements Constructor {
         BuildUnit buildUnit = new BuildUnit(this, mapItem.getBuildingKey(),
                 mapItem.getBuildingData().getUid(), expectedCost, ContractType.Build, tag);
         buildUnit.setStartTime(time);
-        buildUnit.setEndTime(time + mapItem.getBuildingData().getTime());
+        double timeReduction = CurrencyHelper.getActiveContractTimeReduction(
+                this.playerSession, mapItem.getBuildingData(), time);
+        long duration = CurrencyHelper.applyTimeReduction(mapItem.getBuildingData().getTime(), timeReduction);
+        buildUnit.setEndTime(time + duration);
         mapItem.getBuilding().lastCollectTime = buildUnit.getEndTime();
         mapItem.setupForConstruction();
         this.addBuildUnit(buildUnit);
@@ -135,7 +138,10 @@ public class DroidManager implements Constructor {
         BuildUnit buildUnit = new BuildUnit(this, mapItem.getBuildingKey(),
                 nextLevelBuildingData.getUid(), expectedCost, ContractType.Upgrade, tag);
         buildUnit.setStartTime(time);
-        buildUnit.setEndTime(time + nextLevelBuildingData.getTime());
+        double timeReduction = CurrencyHelper.getActiveContractTimeReduction(
+                this.playerSession, nextLevelBuildingData, time);
+        long duration = CurrencyHelper.applyTimeReduction(nextLevelBuildingData.getTime(), timeReduction);
+        buildUnit.setEndTime(time + duration);
         this.addBuildUnit(buildUnit);
 
         int givenTotal = CurrencyHelper.getGivenTotal(currencyType, credits, materials, contraband);
@@ -177,7 +183,10 @@ public class DroidManager implements Constructor {
         BuildUnit buildUnit = new BuildUnit(this, mapItem.getBuildingKey(),
                 buildingUid, crossCost, ContractType.Upgrade, null);
         buildUnit.setStartTime(time);
-        buildUnit.setEndTime(time + mapItem.getBuildingData().getCrossTime());
+        double timeReduction = CurrencyHelper.getActiveContractTimeReduction(
+                this.playerSession, mapItem.getBuildingData(), time);
+        long duration = CurrencyHelper.applyTimeReduction(mapItem.getBuildingData().getCrossTime(), timeReduction);
+        buildUnit.setEndTime(time + duration);
         this.addBuildUnit(buildUnit);
 
         int givenTotal = CurrencyHelper.getGivenTotal(currencyType, credits, materials, contraband);

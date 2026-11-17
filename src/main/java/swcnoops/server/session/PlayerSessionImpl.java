@@ -510,9 +510,10 @@ public class PlayerSessionImpl implements PlayerSession {
             return null;
 
         TroopRequestData troopRequestData = new TroopRequestData();
-        troopRequestData.totalCapacity = this.getSquadBuilding().getBuildingData().getStorage();
+        int bonusCapacity = CurrencyHelper.getActiveTroopRequestAmountBonus(this, time);
+        troopRequestData.totalCapacity = this.getSquadBuilding().getBuildingData().getStorage() + bonusCapacity;
         troopRequestData.troopDonationLimit = troopRequestData.totalCapacity;
-        troopRequestData.amount = getSquadBuildingAvailableSpace(donatedTroops);
+        troopRequestData.amount = getSquadBuildingAvailableSpace(donatedTroops, time);
         troopRequestData.warId = warId;
 
         // this will save the notification for the guild for when the clients call GuildNotificationsGet they will
@@ -524,7 +525,13 @@ public class PlayerSessionImpl implements PlayerSession {
     }
 
     public int getSquadBuildingAvailableSpace(DonatedTroops donatedTroops) {
-        return (this.getSquadBuilding().getBuildingData().getStorage() - this.getDonatedTroopsTotalUnits(donatedTroops));
+        return getSquadBuildingAvailableSpace(donatedTroops, ServiceFactory.getSystemTimeSecondsFromEpoch());
+    }
+
+    private int getSquadBuildingAvailableSpace(DonatedTroops donatedTroops, long time) {
+        int bonusCapacity = CurrencyHelper.getActiveTroopRequestAmountBonus(this, time);
+        int baseCapacity = this.getSquadBuilding().getBuildingData().getStorage() + bonusCapacity;
+        return Math.max(0, baseCapacity - this.getDonatedTroopsTotalUnits(donatedTroops));
     }
 
     @Override

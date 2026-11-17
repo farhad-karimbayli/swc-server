@@ -5,14 +5,20 @@ import swcnoops.server.requests.CommandResult;
 
 public class GuildMemberResult implements CommandResult {
     private Member member;
+    private final int status;
 
     public GuildMemberResult(Member member) {
         this.member = member;
+        this.status = 0;
+    }
+
+    public GuildMemberResult(int status) {
+        this.status = status;
     }
 
     @Override
     public Integer getStatus() {
-        return Integer.valueOf(0);
+        return Integer.valueOf(this.status);
     }
 
     @Override

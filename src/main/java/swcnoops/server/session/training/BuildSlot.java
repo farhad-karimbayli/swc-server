@@ -1,6 +1,8 @@
 package swcnoops.server.session.training;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import swcnoops.server.game.BuildingData;
+import swcnoops.server.game.CurrencyHelper;
 import swcnoops.server.game.TroopData;
 
 import java.util.ArrayList;
@@ -66,9 +68,18 @@ public class BuildSlot {
         for (BuildUnit buildUnit : this.buildUnits) {
             buildUnit.setStartTime(startTime);
             TroopData troopDataEffectiveAtStart = this.getTroopDataEffectiveAt(startTime);
-            long endTime = startTime + troopDataEffectiveAtStart.getTrainingTime();
+            BuildingData builderData = buildUnit.getConstructor() instanceof Builder
+                    ? ((Builder) buildUnit.getConstructor()).getBuildingData()
+                    : null;
+            double timeReduction = CurrencyHelper.getActiveContractTimeReduction(
+                    this.buildQueue.getPlayerSession(), builderData, startTime);
+            long trainTimeAtStart = CurrencyHelper.applyTimeReduction(
+                    troopDataEffectiveAtStart.getTrainingTime(), timeReduction);
+            long endTime = startTime + trainTimeAtStart;
             TroopData troopDataEffectiveAtEnd = this.getTroopDataEffectiveAt(endTime);
-            endTime = endTime + (troopDataEffectiveAtEnd.getTrainingTime() - troopDataEffectiveAtStart.getTrainingTime());
+            long trainTimeAtEnd = CurrencyHelper.applyTimeReduction(
+                    troopDataEffectiveAtEnd.getTrainingTime(), timeReduction);
+            endTime = endTime + (trainTimeAtEnd - trainTimeAtStart);
             buildUnit.setEndTime(endTime);
             startTime = endTime;
         }

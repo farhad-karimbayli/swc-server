@@ -19,10 +19,13 @@ public class GuildJoinReject extends AbstractCommandAction<GuildJoinReject, Comm
         PlayerSession memberSession = sessionManager.getPlayerSession(arguments.getMemberId());
 
         GuildSession guildSession = playerSession.getGuildSession();
-
-        if (guildSession != null) {
-            guildSession.joinRequestRejected(arguments.getPlayerId(), memberSession);
+        if (guildSession == null) {
+            return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_NOT_IN_GUILD);
         }
+        if (!GuildHelper.hasGuildRank(guildSession, arguments.getPlayerId(), false)) {
+            return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_NOT_ENOUGH_GUILD_RANK);
+        }
+        guildSession.joinRequestRejected(arguments.getPlayerId(), memberSession);
 
         return ResponseHelper.SUCCESS_COMMAND_RESULT;
     }

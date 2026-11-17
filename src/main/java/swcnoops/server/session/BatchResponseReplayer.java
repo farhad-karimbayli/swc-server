@@ -93,6 +93,10 @@ public class BatchResponseReplayer {
             }
 
             this.savedResponseMap.put(this.currentMinRequestId, new SavedResponse(batchResponse, exceptionResponse));
+            if (this.savedResponseMap.size() > 100) {
+                long keepAfter = this.currentMaxRequestId - 100;
+                this.savedResponseMap.keySet().removeIf(id -> id < keepAfter);
+            }
             this.processingSet.remove(this.currentMinRequestId);
             this.notifyAll();
         }

@@ -1,7 +1,10 @@
 package swcnoops.server.session;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import swcnoops.server.ServiceFactory;
 import swcnoops.server.commands.Command;
+import swcnoops.server.commands.player.PlayerIdentitySwitch;
 import swcnoops.server.requests.Batch;
 import swcnoops.server.requests.BatchResponse;
 import swcnoops.server.requests.ResponseData;
@@ -13,6 +16,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class AuthenticationService {
+    private static final Logger LOG = LoggerFactory.getLogger(AuthenticationService.class);
     private Map<String, String> playerTokens = new ConcurrentHashMap<>();
     public String createToken(String playerId) {
         String token = playerId + ":" + ServiceFactory.createRandomUUID();
@@ -21,9 +25,26 @@ public class AuthenticationService {
             if (ServiceFactory.instance() != null && ServiceFactory.instance().getPlayerDatasource() != null) {
                 ServiceFactory.instance().getPlayerDatasource().saveAuthToken(playerId, token);
             }
-        } catch (Exception ignored) {
+        } catch (Exception ex) {
+            LOG.warn("Failed to persist auth token for player {}: {}", playerId, ex.getMessage());
         }
         return token;
+    }
+
+    public static String extractPlayerId(String authKey) {
+        if (authKey == null || authKey.isEmpty()) {
+            return null;
+        }
+        int separator = authKey.indexOf(':');
+        return separator > 0 ? authKey.substring(0, separator) : null;
+    }
+
+    public static boolean isAuthorizedPlayerId(String authenticatedPlayerId, String targetPlayerId) {
+        if (authenticatedPlayerId == null || targetPlayerId == null || targetPlayerId.isEmpty()) {
+            return true;
+        }
+        return PlayerIdentitySwitch.getPrimaryAccount(authenticatedPlayerId)
+                .equals(PlayerIdentitySwitch.getPrimaryAccount(targetPlayerId));
     }
 
     private boolean validAuthCommands(List<Command> commands) {
@@ -57,7 +78,8 @@ public class AuthenticationService {
                         playerTokens.put(playerId, expectedKey);
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Exception ex) {
+                LOG.warn("Failed to load auth token for player {}: {}", playerId, ex.getMessage());
             }
         }
         if (expectedKey != null) {

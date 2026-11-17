@@ -1258,13 +1258,12 @@ public class PlayerDatasourceImpl implements PlayerDataSource {
 
         try {
             String defenseBattleId = ServiceFactory.createRandomUUID();
-            long defenseExpirationDate = ServiceFactory.getSystemTimeSecondsFromEpoch() +
-                    ServiceFactory.instance().getConfig().attackDuration;
+            long serverNow = ServiceFactory.getSystemTimeSecondsFromEpoch();
+            long defenseExpirationDate = serverNow + ServiceFactory.instance().getConfig().attackDuration;
 
-            // TODO - change this to findOneAndUpdate to only update if no one has claimed it yet
             Bson defenseMatch = and(eq("warId", warId), eq("id", opponentId),
                     gt("victoryPoints", 0),
-                    or(eq("defenseBattleId", null), lt("defenseExpirationDate", time - 10)));
+                    or(eq("defenseBattleId", null), lt("defenseExpirationDate", serverNow - 10)));
             SquadMemberWarData result = this.squadMemberWarDataCollection.findOneAndUpdate(session, defenseMatch,
                     combine(set("defenseBattleId", defenseBattleId), set("defenseExpirationDate", defenseExpirationDate)));
 
@@ -1285,18 +1284,17 @@ public class PlayerDatasourceImpl implements PlayerDataSource {
                     attackDetail = new AttackDetail(ResponseHelper.STATUS_CODE_GUILD_WAR_NOT_ENOUGH_TURNS);
                 }
             } else {
-                // no battle id generated means it is getting attacked by someone already
+                // no battle id generated means it is getting attacked by someone already or cleared
                 SquadMemberWarData opponentData = this.squadMemberWarDataCollection.findOne(combine(eq("warId", warId),
                         eq("id", opponentId)), include("id", "victoryPoints", "defenseExpirationDate"));
 
-                // base has been cleared
-                if (opponentData.victoryPoints == 0) {
+                if (opponentData == null || opponentData.victoryPoints == 0) {
                     attackDetail = new AttackDetail(ResponseHelper.STATUS_CODE_GUILD_WAR_NOT_ENOUGH_VICTORY_POINTS);
-                } else if (time > opponentData.defenseExpirationDate) {
-                    // TODO - give a grace time on when to decide to unlock this base as possible client crash
-                    System.out.println("WarBase is still being attacked but expiry time has finished, maybe client crashed?");
-                    attackDetail = new AttackDetail(ResponseHelper.STATUS_CODE_GUILD_WAR_BASE_UNDER_ATTACK);
                 } else {
+                    if (serverNow > opponentData.defenseExpirationDate) {
+                        LOG.warn("WarBase {} is locked past expiration {} (now={})", opponentId,
+                                opponentData.defenseExpirationDate, serverNow);
+                    }
                     attackDetail = new AttackDetail(ResponseHelper.STATUS_CODE_GUILD_WAR_BASE_UNDER_ATTACK);
                 }
             }

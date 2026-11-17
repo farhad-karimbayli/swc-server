@@ -99,7 +99,12 @@ public class SparkMain {
         public Object handle(Request request, Response response) throws Exception {
             String postBody = request.body();
             Map<String, List<String>> parameters = decodeParameters(postBody);
-            String batchRequestJson = parameters.get("batch").get(0);
+            List<String> batchParams = parameters.get("batch");
+            if (batchParams == null || batchParams.isEmpty() || batchParams.get(0) == null) {
+                response.status(400);
+                return "Missing batch parameter";
+            }
+            String batchRequestJson = batchParams.get(0);
             // Log which commands the client asked for. When it stalls, the
             // last command in this list is where it stopped, and that is the
             // only clue the client gives.
@@ -175,7 +180,13 @@ public class SparkMain {
                 return "Resource not found";
             }
 
+            long size = java.nio.file.Files.size(resolved);
             response.type("octet-stream");
+            response.header("Content-Length", String.valueOf(size));
+            String fileName = resolved.getFileName().toString().toLowerCase();
+            if (fileName.endsWith(".assetbundle") || pathStr(resolved).contains("/patches/")) {
+                response.header("Cache-Control", "public, max-age=86400");
+            }
             response.status(200);
 
             ServletOutputStream os = response.raw().getOutputStream();
@@ -184,6 +195,10 @@ public class SparkMain {
             }
             os.flush();
             return "";
+        }
+
+        private static String pathStr(java.nio.file.Path path) {
+            return path.toString().replace('\\', '/');
         }
 
         private java.nio.file.Path resolveFallbackFile(java.nio.file.Path swcRoot, java.nio.file.Path requested) {

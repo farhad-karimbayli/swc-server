@@ -29,7 +29,9 @@ public class GuildWarAttackPlayerStart extends AbstractCommandAction<GuildWarAtt
                 if (attackDetail != null && attackDetail.getBattleId() != null)
                     battleIdResult = new BattleIdResult(attackDetail.getBattleId());
                 else
-                    battleIdResult = new BattleIdResult(attackDetail.getReturnCode());
+                    battleIdResult = new BattleIdResult(attackDetail != null
+                            ? attackDetail.getReturnCode()
+                            : ResponseHelper.STATUS_CODE_GUILD_WAR_EXPIRED);
             } else {
                 // TODO - might not be the correct error code to send back but if no war session, not sure what to send
                 battleIdResult = new BattleIdResult(ResponseHelper.STATUS_CODE_GUILD_WAR_EXPIRED);

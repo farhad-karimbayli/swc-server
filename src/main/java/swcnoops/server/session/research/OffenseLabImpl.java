@@ -12,6 +12,7 @@ import swcnoops.server.session.inventory.Troops;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class OffenseLabImpl implements OffenseLab {
     final private Building building;
@@ -97,18 +98,31 @@ public class OffenseLabImpl implements OffenseLab {
     @Override
     public CurrencyDelta upgradeStart(String buildingId, String troopUid, int credits, int materials, int contraband, long time) {
         CurrencyDelta currencyDelta = null;
-        // TODO - handle troops that are upgraded by shards
         if (this.playerSession.getTroopInventory().getTroops() != null) {
             TroopData troopData = ServiceFactory.instance().getGameDataManager().getTroopDataByUid(troopUid);
+            if (troopData == null) {
+                return null;
+            }
+            if (troopData.getUpgradeShards() > 0 && troopData.getUpgradeShardUid() != null) {
+                Map<String, Integer> shards = this.playerSession.getPlayerSettings().getShards();
+                int currentShards = shards.getOrDefault(troopData.getUpgradeShardUid(), 0);
+                if (currentShards >= troopData.getUpgradeShards()) {
+                    shards.put(troopData.getUpgradeShardUid(), currentShards - troopData.getUpgradeShards());
+                } else if (!ServiceFactory.instance().getConfig().freeResources) {
+                    return null;
+                }
+            }
             long endTime = time + troopData.getUpgradeTime();
             CurrencyType currencyType = CurrencyHelper.getCurrencyType(troopData);
             int upgradeCost = CurrencyHelper.getUpgradeCost(troopData, currencyType);
             TroopUpgrade troopUpgrade = new TroopUpgrade(buildingId, troopUid, endTime, upgradeCost);
             this.playerSession.getTroopInventory().getTroops().getUpgrades().add(troopUpgrade);
 
-            int givenTotal = CurrencyHelper.getGivenTotal(currencyType, credits, materials, contraband);
-            int givenDelta = CurrencyHelper.calculateGivenConstructionCost(this.playerSession, givenTotal, currencyType);
-            currencyDelta = new CurrencyDelta(givenDelta, upgradeCost, currencyType, true);
+            if (currencyType != null) {
+                int givenTotal = CurrencyHelper.getGivenTotal(currencyType, credits, materials, contraband);
+                int givenDelta = CurrencyHelper.calculateGivenConstructionCost(this.playerSession, givenTotal, currencyType);
+                currencyDelta = new CurrencyDelta(givenDelta, upgradeCost, currencyType, true);
+            }
         }
 
         return currencyDelta;

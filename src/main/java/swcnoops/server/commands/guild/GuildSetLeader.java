@@ -22,7 +22,13 @@ public class GuildSetLeader extends AbstractCommandAction<GuildSetLeader, Comman
                 ? sessionManager.getPlayerSession(arguments.getMemberId())
                 : null;
         GuildSession guildSession = playerSession.getGuildSession();
-        if (guildSession != null && memberSession != null) {
+        if (guildSession == null) {
+            return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_NOT_IN_GUILD);
+        }
+        if (!GuildHelper.hasGuildRank(guildSession, arguments.getPlayerId(), true)) {
+            return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_NOT_ENOUGH_GUILD_RANK);
+        }
+        if (memberSession != null && !arguments.getPlayerId().equals(arguments.getMemberId())) {
             guildSession.changeSquadRole(playerSession, memberSession, SquadRole.Owner, SquadMsgType.promotion);
             guildSession.changeSquadRole(playerSession, playerSession, SquadRole.Officer, SquadMsgType.demotion);
         }

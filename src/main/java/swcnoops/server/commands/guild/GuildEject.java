@@ -17,11 +17,16 @@ public class GuildEject extends AbstractCommandAction<GuildEject, CommandResult>
     protected CommandResult execute(GuildEject arguments, long time) throws Exception {
         SessionManager sessionManager = ServiceFactory.instance().getSessionManager();
         PlayerSession playerSession = sessionManager.getPlayerSession(arguments.getPlayerId());
+        GuildSession oldSquad = playerSession.getGuildSession();
+        if (oldSquad == null) {
+            return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_NOT_IN_GUILD);
+        }
+        if (!GuildHelper.hasGuildRank(oldSquad, arguments.getPlayerId(), false)) {
+            return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_NOT_ENOUGH_GUILD_RANK);
+        }
         PlayerSession ejectPlayerSession = sessionManager.getPlayerSession(arguments.getMemberId());
         ejectPlayerSession.getDonatedTroops().clear();
-        GuildSession oldSquad = playerSession.getGuildSession();
-        if (oldSquad != null)
-            oldSquad.leave(ejectPlayerSession, SquadMsgType.ejected);
+        oldSquad.leave(ejectPlayerSession, SquadMsgType.ejected);
         return ResponseHelper.SUCCESS_COMMAND_RESULT;
     }
 

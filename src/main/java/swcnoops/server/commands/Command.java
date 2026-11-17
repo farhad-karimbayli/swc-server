@@ -14,6 +14,7 @@ public class Command {
     private CommandAction commandAction;
     private CommandResult commandResult;
     private CommandArguments parsedArgument;
+    private String authenticatedPlayerId;
 
     public String getAction() {
         return action;
@@ -77,5 +78,13 @@ public class Command {
 
     public CommandArguments getParsedArgument() {
         return parsedArgument;
+    }
+
+    public String getAuthenticatedPlayerId() {
+        return authenticatedPlayerId;
+    }
+
+    public void setAuthenticatedPlayerId(String authenticatedPlayerId) {
+        this.authenticatedPlayerId = authenticatedPlayerId;
     }
 }

@@ -25,8 +25,13 @@ public class GuildPromote extends AbstractCommandAction<GuildPromote, CommandRes
         PlayerSession playerSession = sessionManager.getPlayerSession(arguments.getPlayerId());
         PlayerSession memberSession = sessionManager.getPlayerSession(arguments.getMemberId());
         GuildSession guildSession = playerSession.getGuildSession();
-        if (guildSession != null)
-            guildSession.changeSquadRole(playerSession, memberSession, SquadRole.Officer, SquadMsgType.promotion);
+        if (guildSession == null) {
+            return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_NOT_IN_GUILD);
+        }
+        if (!GuildHelper.hasGuildRank(guildSession, arguments.getPlayerId(), false)) {
+            return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_NOT_ENOUGH_GUILD_RANK);
+        }
+        guildSession.changeSquadRole(playerSession, memberSession, SquadRole.Officer, SquadMsgType.promotion);
         return ResponseHelper.SUCCESS_COMMAND_RESULT;
     }
 
