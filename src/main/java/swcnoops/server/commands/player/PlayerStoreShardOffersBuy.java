@@ -13,6 +13,7 @@ import swcnoops.server.session.PlayerSession;
 import java.util.Map;
 
 public class PlayerStoreShardOffersBuy extends AbstractCommandAction<PlayerStoreShardOffersBuy, CommandResult> {
+    private static final int MAX_SLOT_PURCHASES = 10;
     private String poolSlotId;
     private int poolIndex;
     private String supplyUid;
@@ -24,6 +25,14 @@ public class PlayerStoreShardOffersBuy extends AbstractCommandAction<PlayerStore
 
         long now = time > 0 ? time : ServiceFactory.getSystemTimeSecondsFromEpoch();
         ShardShopData shopData = PlayerStoreShardOffersGet.ensureShardShopData(playerSession, now, false);
+
+        Map<String, Integer> targetPool = getPool(shopData, arguments.getPoolIndex());
+        if (targetPool != null && arguments.getPoolSlotId() != null && targetPool.containsKey(arguments.getPoolSlotId())) {
+            int bought = targetPool.getOrDefault(arguments.getPoolSlotId(), 0);
+            if (!ServiceFactory.instance().getConfig().freeResources && bought >= MAX_SLOT_PURCHASES) {
+                return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_BAD_INPUT);
+            }
+        }
 
         String targetSupply = arguments.getSupplyUid();
         if (targetSupply == null || targetSupply.isEmpty()) {
@@ -46,15 +55,18 @@ public class PlayerStoreShardOffersBuy extends AbstractCommandAction<PlayerStore
         return ResponseHelper.SUCCESS_COMMAND_RESULT;
     }
 
-    private void incrementPoolPurchase(ShardShopData shopData, int idx, String slotId) {
-        Map<String, Integer> pool;
+    private Map<String, Integer> getPool(ShardShopData shopData, int idx) {
         switch (idx) {
-            case 1: pool = shopData.pool_1; break;
-            case 2: pool = shopData.pool_2; break;
-            case 3: pool = shopData.pool_3; break;
-            case 4: pool = shopData.pool_4; break;
-            default: pool = shopData.pool_0; break;
+            case 1: return shopData.pool_1;
+            case 2: return shopData.pool_2;
+            case 3: return shopData.pool_3;
+            case 4: return shopData.pool_4;
+            default: return shopData.pool_0;
         }
+    }
+
+    private void incrementPoolPurchase(ShardShopData shopData, int idx, String slotId) {
+        Map<String, Integer> pool = getPool(shopData, idx);
         if (pool != null && slotId != null && pool.containsKey(slotId)) {
             pool.put(slotId, pool.get(slotId) + 1);
         }

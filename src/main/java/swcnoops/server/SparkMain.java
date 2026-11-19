@@ -40,6 +40,13 @@ public class SparkMain {
                 b.type("octet-stream");
                 return "{}";
             });
+            get("/health", (req, res) -> {
+                boolean dbOk = ServiceFactory.instance().getPlayerDatasource() != null
+                        && ServiceFactory.instance().getPlayerDatasource().isHealthy();
+                res.type("application/json");
+                res.status(dbOk ? 200 : 503);
+                return "{\"status\":\"" + (dbOk ? "ok" : "degraded") + "\",\"mongo\":" + dbOk + "}";
+            });
             get("/swcFiles/*", new GetFile());
             get("/*", new ConnectionTest());
 
@@ -56,9 +63,14 @@ public class SparkMain {
             });
 
             exception(Exception.class, (e, request, response) -> {
-                LOG.error("Caught exception ", e);
-                response.status(404);
-                response.body("Resource not found");
+                LOG.error("Caught exception on {} {}", request.requestMethod(), request.pathInfo(), e);
+                response.status(500);
+                if (request.pathInfo() != null && request.pathInfo().startsWith("/starts/batch/")) {
+                    response.type("application/json");
+                    response.body("{\"error\":\"Internal server error\"}");
+                } else {
+                    response.body("Internal server error");
+                }
             });
 
             LOG.info("Done ready to process from port " + ServiceFactory.instance().getConfig().webServicePort);
@@ -74,7 +86,13 @@ public class SparkMain {
         config.setFromProperties(properties);
         ServiceFactory.instance(config);
 
-        Thread shutdownThread = new Thread(() -> ServiceFactory.instance().shutdown());
+        Thread shutdownThread = new Thread(() -> {
+            try {
+                stop();
+            } catch (Exception ignored) {
+            }
+            ServiceFactory.instance().shutdown();
+        });
         Runtime.getRuntime().addShutdownHook(shutdownThread);
 
         ServiceFactory.instance().getPlayerDatasource().initOnStartup();
@@ -181,6 +199,14 @@ public class SparkMain {
             }
 
             long size = java.nio.file.Files.size(resolved);
+            long lastModified = java.nio.file.Files.getLastModifiedTime(resolved).toMillis();
+            String etag = "\"" + size + "-" + lastModified + "\"";
+            response.header("ETag", etag);
+            String ifNoneMatch = request.headers("If-None-Match");
+            if (etag.equals(ifNoneMatch)) {
+                response.status(304);
+                return "";
+            }
             response.type("octet-stream");
             response.header("Content-Length", String.valueOf(size));
             String fileName = resolved.getFileName().toString().toLowerCase();

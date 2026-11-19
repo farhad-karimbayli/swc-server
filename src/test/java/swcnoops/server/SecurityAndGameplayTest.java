@@ -106,4 +106,24 @@ public class SecurityAndGameplayTest {
         assertFalse(GuildHelper.hasGuildRank(session, "u3", true));
         assertFalse(GuildHelper.hasGuildRank(session, "u3", false));
     }
+
+    @Test
+    public void offenseLabAndHealthSafetyTest() {
+        swcnoops.server.model.Building b = new swcnoops.server.model.Building();
+        b.key = "bld_1";
+        b.uid = "empireTroopResearch1";
+        b.x = 1;
+        b.z = 2;
+        swcnoops.server.session.research.OffenseLabImpl lab =
+                new swcnoops.server.session.research.OffenseLabImpl(null, b, null);
+        swcnoops.server.model.Position pos = new swcnoops.server.model.Position();
+        pos.x = 10;
+        pos.z = 12;
+        lab.moveTo(pos);
+        assertEquals(10, b.x);
+        assertEquals(12, b.z);
+
+        swcnoops.server.datasource.PlayerDatasourceImpl ds = new swcnoops.server.datasource.PlayerDatasourceImpl();
+        assertFalse(ds.isHealthy());
+    }
 }

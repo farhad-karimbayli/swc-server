@@ -95,7 +95,10 @@ public class CreatureManagerImpl implements CreatureManager {
 
     @Override
     public CurrencyDelta cancel(long time, int credits, int materials, int contraband) {
-        throw new UnsupportedOperationException();
+        if (this.creature != null && this.creature.getCreatureStatus() == CreatureStatus.Recapturing) {
+            this.creature.setCreatureStatus(CreatureStatus.Dead);
+        }
+        return null;
     }
 
     @Override
@@ -115,7 +118,10 @@ public class CreatureManagerImpl implements CreatureManager {
 
     @Override
     public void moveTo(Position newPosition) {
-        throw new UnsupportedOperationException();
+        if (newPosition != null && this.creatureDataMap != null && this.creatureDataMap.building != null) {
+            this.creatureDataMap.building.x = newPosition.x;
+            this.creatureDataMap.building.z = newPosition.z;
+        }
     }
 
     @Override
@@ -125,17 +131,25 @@ public class CreatureManagerImpl implements CreatureManager {
 
     @Override
     public void changeBuildingData(BuildingData buildingData) {
-        throw new UnsupportedOperationException();
+        if (buildingData != null && this.creatureDataMap != null) {
+            this.creatureDataMap.building.uid = buildingData.getUid();
+            TrapData trapData = ServiceFactory.instance().getGameDataManager().getTrapDataByUid(buildingData.getTrapId());
+            this.creatureDataMap = new CreatureDataMap(this.creatureDataMap.building, buildingData,
+                    trapData != null ? trapData : this.creatureDataMap.trapData);
+        }
     }
 
     @Override
     public void upgradeComplete(PlayerSession playerSession, String unitId, String tag, long endTime) {
-        throw new UnsupportedOperationException();
+        BuildingData upgraded = ServiceFactory.instance().getGameDataManager().getBuildingDataByUid(unitId);
+        if (upgraded != null) {
+            changeBuildingData(upgraded);
+        }
     }
 
     @Override
     public void buildComplete(PlayerSession playerSession, String unitId, String tag, long endTime) {
-        throw new UnsupportedOperationException();
+        upgradeComplete(playerSession, unitId, tag, endTime);
     }
 
     @Override

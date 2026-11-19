@@ -19,6 +19,5 @@ public class PvpTargetResourcesMap {
         this.credits.put(CurrencyType.credits, credits);
         this.materials.put(CurrencyType.materials, materials);
         this.contraband.put(CurrencyType.contraband, contraband);
-        System.out.println(" System.out.println(this.credits.get(ResourceTypes.credits));---"+this.credits.get(CurrencyType.credits));
     }
 }

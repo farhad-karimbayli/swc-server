@@ -28,7 +28,10 @@ public class PlayerEquipmentUpgradeStart extends AbstractCommandAction<PlayerEqu
                 String shardKey = "shrd_" + eq.getEquipmentID();
                 Map<String, Integer> shards = playerSession.getPlayerSettings().getShards();
                 int current = shards.getOrDefault(shardKey, 0);
-                shards.put(shardKey, Math.max(0, current - eq.getUpgradeShards()));
+                if (current < eq.getUpgradeShards()) {
+                    return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_BAD_INPUT);
+                }
+                shards.put(shardKey, current - eq.getUpgradeShards());
             }
             Map<String, Integer> eqUpgrades = playerSession.getPlayerSettings().getUpgrades().equipment;
             int currentLvl = eqUpgrades.getOrDefault(eq.getEquipmentID(), 0);

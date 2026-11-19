@@ -17,9 +17,9 @@ public class WarSessionImpl implements WarSession {
     final private String warId;
     private final GuildSession squadA;
     private final GuildSession squadB;
-    private War war;
-    private long dirtyTime;
-    private long lastLoadedWarTime;
+    private volatile War war;
+    private volatile long dirtyTime;
+    private volatile long lastLoadedWarTime;
     private Lock guildGetLock = new ReentrantLock();
     private Lock warLock = new ReentrantLock();
 
@@ -27,6 +27,9 @@ public class WarSessionImpl implements WarSession {
         this.warId = warId;
         this.war = ServiceFactory.instance().getPlayerDatasource().getWar(warId);
         this.lastLoadedWarTime = System.currentTimeMillis();
+        if (this.war == null) {
+            throw new IllegalStateException("War not found: " + warId);
+        }
         this.squadA = ServiceFactory.instance().getSessionManager().getGuildSession(war.getSquadIdA());
         this.squadB = ServiceFactory.instance().getSessionManager().getGuildSession(war.getSquadIdB());
     }

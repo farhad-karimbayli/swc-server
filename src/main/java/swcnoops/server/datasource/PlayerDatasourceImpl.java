@@ -105,6 +105,8 @@ public class PlayerDatasourceImpl implements PlayerDataSource {
                 .partialFilterExpression(exists("squadMembers.playerId")));
         this.squadCollection.createIndex(Indexes.ascending("faction"));
         this.squadCollection.createIndex(Indexes.text("name"));
+        this.squadCollection.createIndex(Indexes.ascending("warId"),
+                new IndexOptions().partialFilterExpression(exists("warId")));
 
         this.squadNotificationCollection = JacksonMongoCollection.builder()
                 .build(this.mongoClient, mongoDBName, "squadNotification", SquadNotification.class, UuidRepresentation.STANDARD);
@@ -147,6 +149,8 @@ public class PlayerDatasourceImpl implements PlayerDataSource {
                 Indexes.ascending("guildId"),
                 Indexes.ascending("warId")),
                 new IndexOptions().unique(true));
+        this.squadMemberWarDataCollection.createIndex(compoundIndex(Indexes.ascending("warId"),
+                Indexes.ascending("id")));
 
         this.patchesCollection = JacksonMongoCollection.builder()
                 .build(this.mongoClient, mongoDBName, "patches", Patch.class, UuidRepresentation.STANDARD);
@@ -2141,5 +2145,20 @@ public class PlayerDatasourceImpl implements PlayerDataSource {
         Player p = this.playerCollection.find(eq("_id", playerId))
                 .projection(include("authToken")).first();
         return p != null ? p.getAuthToken() : null;
+    }
+
+    @Override
+    public boolean isHealthy() {
+        if (this.database == null) {
+            return false;
+        }
+        try {
+            Document res = this.database.runCommand(new Document("ping", 1));
+            Number ok = res != null ? (Number) res.get("ok") : null;
+            return ok != null && ok.intValue() == 1;
+        } catch (Exception ex) {
+            LOG.warn("MongoDB health ping failed: {}", ex.getMessage());
+            return false;
+        }
     }
 }

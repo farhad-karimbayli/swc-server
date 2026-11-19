@@ -41,6 +41,7 @@ public class PlayerSettings {
     private ShardShopData shardShopData;
     private EpisodeProgressInfo episodeProgressInfo;
     private List<String> redeemedTournaments = new ArrayList<>();
+    private long lastTroopRequestTime;
 
     public PlayerSettings() {
     }
@@ -307,5 +308,13 @@ public class PlayerSettings {
 
     public void setRedeemedTournaments(List<String> redeemedTournaments) {
         this.redeemedTournaments = redeemedTournaments;
+    }
+
+    public long getLastTroopRequestTime() {
+        return lastTroopRequestTime;
+    }
+
+    public void setLastTroopRequestTime(long lastTroopRequestTime) {
+        this.lastTroopRequestTime = lastTroopRequestTime;
     }
 }

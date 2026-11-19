@@ -105,6 +105,9 @@ public class PlayerLogin extends AbstractCommandAction<PlayerLogin, PlayerLoginC
         playerLoginResponse.name = playerSession.getPlayer().getPlayerSettings().getName();
         playerLoginResponse.playerModel.faction = playerSession.getPlayer().getPlayerSettings().getFaction();
         playerLoginResponse.playerModel.currentQuest = playerSession.getPlayerSettings().getCurrentQuest();
+        if (playerSession.getPlayerSettings().getLastTroopRequestTime() > 0) {
+            playerLoginResponse.lastTroopRequestTime = playerSession.getPlayerSettings().getLastTroopRequestTime();
+        }
 
         mapGuild(playerLoginResponse.playerModel, playerSession);
 

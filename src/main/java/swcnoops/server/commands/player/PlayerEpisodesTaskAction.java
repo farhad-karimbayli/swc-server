@@ -75,7 +75,7 @@ public class PlayerEpisodesTaskAction extends AbstractCommandAction<PlayerEpisod
     private CommandResult claimCurrentTask(PlayerSession playerSession, EpisodeProgressInfo info,
                                          PatchData patchData, long now) {
         CrateDataResult crateResult = new CrateDataResult();
-        if (info.currentTask != null) {
+        if (info.currentTask != null && info.currentTask.completed && !info.currentTask.claimed) {
             if (!info.finishedTasks.contains(info.currentTask.uid)) {
                 info.finishedTasks.add(info.currentTask.uid);
             }

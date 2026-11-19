@@ -8,17 +8,20 @@ import swcnoops.server.game.LimitedEditionItemData;
 import swcnoops.server.json.JsonParser;
 import swcnoops.server.model.CrateData;
 import swcnoops.server.model.CurrencyType;
+import swcnoops.server.model.InventoryStorage;
+import swcnoops.server.requests.CommandResult;
+import swcnoops.server.requests.ResponseHelper;
 import swcnoops.server.session.CurrencyDelta;
 import swcnoops.server.session.PlayerSession;
 
 import java.util.Map;
 
-public class PlayerStoreCrateBuy extends AbstractCommandAction<PlayerStoreCrateBuy, PlayerStoreCrateBuyResult> {
+public class PlayerStoreCrateBuy extends AbstractCommandAction<PlayerStoreCrateBuy, CommandResult> {
     private String crateId;
     private String leUid;
 
     @Override
-    protected PlayerStoreCrateBuyResult execute(PlayerStoreCrateBuy arguments, long time) throws Exception {
+    protected CommandResult execute(PlayerStoreCrateBuy arguments, long time) throws Exception {
         PlayerSession playerSession = ServiceFactory.instance().getSessionManager()
                 .getPlayerSession(arguments.getPlayerId());
 
@@ -28,13 +31,26 @@ public class PlayerStoreCrateBuy extends AbstractCommandAction<PlayerStoreCrateB
                     .getPatchData().getMap(LimitedEditionItemData.class);
             LimitedEditionItemData le = leMap != null ? leMap.get(arguments.getLeUid()) : null;
             if (le != null) {
+                InventoryStorage storage = playerSession.getInventoryManager().getObjectForReading();
                 if (le.getCrystals() > 0) {
+                    if (storage.crystals.amount < le.getCrystals()) {
+                        return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_BAD_INPUT);
+                    }
                     playerSession.processInventoryStorage(new CurrencyDelta(le.getCrystals(), le.getCrystals(), CurrencyType.crystals, true));
                 } else if (le.getCredits() > 0) {
+                    if (storage.credits.amount < le.getCredits()) {
+                        return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_BAD_INPUT);
+                    }
                     playerSession.processInventoryStorage(new CurrencyDelta(le.getCredits(), le.getCredits(), CurrencyType.credits, true));
                 } else if (le.getMaterials() > 0) {
+                    if (storage.materials.amount < le.getMaterials()) {
+                        return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_BAD_INPUT);
+                    }
                     playerSession.processInventoryStorage(new CurrencyDelta(le.getMaterials(), le.getMaterials(), CurrencyType.materials, true));
                 } else if (le.getContraband() > 0) {
+                    if (storage.contraband.amount < le.getContraband()) {
+                        return ResponseHelper.newStatusResult(ResponseHelper.STATUS_CODE_BAD_INPUT);
+                    }
                     playerSession.processInventoryStorage(new CurrencyDelta(le.getContraband(), le.getContraband(), CurrencyType.contraband, true));
                 }
             }

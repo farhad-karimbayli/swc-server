@@ -1,0 +1,33 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: swc-mongo
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - swc_mongo_data:/data/db
+    healthcheck:
+      test: >
+        mongosh --quiet --eval "try { rs.status().ok } catch(e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]}).ok }"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  swc-server:
+    build: .
+    container_name: swc-server
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./swc.properties:/app/swc.properties:ro
+      - ./swcFiles:/app/swcFiles:ro
+      - ./layouts:/app/layouts:ro
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+volumes:
+  swc_mongo_data:

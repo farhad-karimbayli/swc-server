@@ -156,17 +156,26 @@ public class OffenseLabImpl implements OffenseLab {
 
     @Override
     public void changeBuildingData(BuildingData buildingData) {
-        throw new UnsupportedOperationException();
+        if (buildingData != null) {
+            this.buildingData = buildingData;
+            this.building.uid = buildingData.getUid();
+        }
     }
 
     @Override
     public void upgradeComplete(PlayerSession playerSession, String unitId, String tag, long endTime) {
-        throw new UnsupportedOperationException();
+        BuildingData upgraded = ServiceFactory.instance().getGameDataManager().getBuildingDataByUid(unitId);
+        if (upgraded != null) {
+            changeBuildingData(upgraded);
+        }
     }
 
     @Override
     public void moveTo(Position newPosition) {
-        throw new UnsupportedOperationException();
+        if (newPosition != null && this.building != null) {
+            this.building.x = newPosition.x;
+            this.building.z = newPosition.z;
+        }
     }
 
     @Override

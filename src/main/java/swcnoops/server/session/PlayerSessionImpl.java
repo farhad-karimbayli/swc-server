@@ -521,6 +521,11 @@ public class PlayerSessionImpl implements PlayerSession {
         SquadNotification squadNotification = guildSession.troopsRequest(this,
                 troopRequestData, message, time);
 
+        if (warId == null) {
+            int cooldownDiscount = CurrencyHelper.getActiveTroopRequestTimeDiscount(this, time);
+            this.getPlayerSettings().setLastTroopRequestTime(Math.max(0L, time - cooldownDiscount));
+        }
+
         return squadNotification;
     }
 
@@ -1651,7 +1656,7 @@ public class PlayerSessionImpl implements PlayerSession {
 
         Integer troopsGivenByPlayer = guildDonatedTroops.get(fromPlayerId);
         if (troopsGivenByPlayer == null)
-            troopsGivenByPlayer = new Integer(0);
+            troopsGivenByPlayer = Integer.valueOf(0);
 
         troopsGivenByPlayer = troopsGivenByPlayer + numberOf;
         guildDonatedTroops.put(fromPlayerId, troopsGivenByPlayer);

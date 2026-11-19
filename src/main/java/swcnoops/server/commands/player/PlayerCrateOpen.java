@@ -3,6 +3,7 @@ package swcnoops.server.commands.player;
 import swcnoops.server.ServiceFactory;
 import swcnoops.server.commands.AbstractCommandAction;
 import swcnoops.server.commands.player.response.CrateDataResult;
+import swcnoops.server.game.CrateService;
 import swcnoops.server.json.JsonParser;
 import swcnoops.server.model.CrateData;
 import swcnoops.server.model.PlayerCrates;
@@ -17,8 +18,12 @@ public class PlayerCrateOpen extends AbstractCommandAction<PlayerCrateOpen, Crat
                 .getPlayerSession(arguments.getPlayerId());
         PlayerCrates crates = playerSession.getPlayerSettings().getCrates();
         CrateData crate = crates.available.get(arguments.getCrateUid());
-        if (crate != null) {
+        if (crate == null) {
+            crate = crates.inProgress.get(arguments.getCrateUid());
+        }
+        if (crate != null && !crate.claimed) {
             crate.claimed = true;
+            CrateService.awardCrate(playerSession, arguments.getCrateUid());
             playerSession.savePlayerKeepAlive();
         }
         CrateDataResult result = new CrateDataResult();

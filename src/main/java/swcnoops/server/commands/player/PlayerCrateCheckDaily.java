@@ -20,8 +20,9 @@ public class PlayerCrateCheckDaily extends AbstractCommandAction<PlayerCrateChec
         long now = time > 0 ? time : ServiceFactory.getSystemTimeSecondsFromEpoch();
         boolean changed = false;
         if (crates.nextDailyCrateTime <= now) {
+            crates.available.entrySet().removeIf(e -> e.getValue() != null && e.getValue().claimed);
             boolean hasDailyAlready = crates.available.values().stream()
-                    .anyMatch(c -> "daily".equals(c.context));
+                    .anyMatch(c -> "daily".equals(c.context) && !c.claimed);
             if (!hasDailyAlready) {
                 CrateService.createAndStoreCrate(playerSession, "lc_daily", "daily", null, now);
                 changed = true;

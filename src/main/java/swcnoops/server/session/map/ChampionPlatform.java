@@ -26,7 +26,7 @@ public class ChampionPlatform extends MapItemImpl {
         // platform and the deka (although does not seem to impact anything really)
         // should clean this up properly.
         playerSession.getTrainingManager().getDeployableChampion().getDeployableUnits()
-                .put(troopData.getUnitId(), new Integer(1));
+                .put(troopData.getUnitId(), Integer.valueOf(1));
         playerSession.getTroopInventory().upgradeTroop(troopData, endTime);
     }
 

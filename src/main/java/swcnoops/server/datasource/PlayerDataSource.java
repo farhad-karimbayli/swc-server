@@ -140,4 +140,6 @@ public interface PlayerDataSource {
     void saveAuthToken(String playerId, String authToken);
 
     String getAuthToken(String playerId);
+
+    boolean isHealthy();
 }
